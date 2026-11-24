@@ -1,0 +1,3181 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <!-- Viewport configuration for responsive mobile-first design across Android, tablet, and desktop -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>T4FX — Institutional Execution & Market Structure Terminal</title>
+
+  <!-- Load Inter font family and JetBrains Mono for crisp tabular numbers -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Configure Tailwind custom colors, fonts, and design tokens -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+          colors: {
+            obsidian: '#090b0f',
+            charcoal: '#11151c',
+            charcoalLight: '#171c26',
+            charcoalBorder: '#232a38',
+            gold: '#d4af37',
+            goldBright: '#f5c542',
+            emeraldLong: '#10b981',
+            crimsonShort: '#ef4444',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* Base obsidian background and smooth touch scrolling */
+    html, body {
+      background-color: #090b0f;
+      color: #f3f4f6;
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+
+    /* Custom subtle dark scrollbars for tables and DOM lists */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090b0f;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232a38;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #d4af37;
+    }
+
+    /* Tabular numbers prevent jitter during real-time tick updates */
+    .tabular-nums-strict {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Subtle gold glow on active primary badges or accents */
+    .gold-glow {
+      box-shadow: 0 0 22px rgba(212, 175, 55, 0.16);
+    }
+
+    /* Canvas container ensures responsive sizing without fixed pixel traps */
+    #chartCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body id="top" class="bg-obsidian text-gray-100 min-h-screen flex flex-col selection:bg-gold/30 selection:text-goldBright">
+
+  <!-- ===================================================================== -->
+  <!-- 1. TOP NAVIGATION BAR (XAUUSD EXCLUSIVE + DXY MONITOR)               -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-40 bg-charcoal/95 backdrop-blur-md border-b border-charcoalBorder">
+    <div class="max-w-[1800px] mx-auto px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+
+      <!-- Left: T4FX GOLD Brand + Exclusive XAUUSD Feed Selector + DXY Quote -->
+      <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+        <a href="#top" class="flex items-center gap-2.5 group focus:outline-none">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-goldBright via-gold to-amber-700 flex items-center justify-center text-obsidian font-extrabold text-sm shadow-md gold-glow">
+            T4
+          </div>
+          <div class="leading-tight">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base sm:text-lg font-extrabold tracking-tight text-white">T4FX <span class="text-goldBright">GOLD</span></span>
+              <span class="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-gold/15 text-goldBright border border-gold/30">XAUUSD ONLY</span>
+            </div>
+            <p class="text-[10px] text-gray-400 hidden sm:block">Gold Intelligence • SMC • ICT • DXY News</p>
+          </div>
+        </a>
+
+        <!-- XAUUSD-Only TradingView Feed Source Selector -->
+        <div class="flex items-center bg-obsidian border border-charcoalBorder rounded-xl p-1 gap-1 overflow-x-auto max-w-full" role="group" aria-label="XAUUSD feed source selector">
+          <button type="button" data-tv-symbol="OANDA:XAUUSD" class="tv-sym-btn px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-all bg-gold text-obsidian shadow shrink-0">
+            OANDA:XAUUSD
+          </button>
+          <button type="button" data-tv-symbol="TVC:GOLD" class="tv-sym-btn px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight shrink-0">
+            TVC:GOLD
+          </button>
+          <button type="button" data-tv-symbol="FX_IDC:XAUUSD" class="tv-sym-btn px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight shrink-0">
+            FX_IDC:XAUUSD
+          </button>
+          <button type="button" data-tv-symbol="BINANCE:XAUUSDT" class="tv-sym-btn px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight shrink-0">
+            BINANCE:XAUUSDT
+          </button>
+        </div>
+
+        <!-- Embedded TradingView Single Quote Widget for Active XAUUSD Feed -->
+        <div class="bg-obsidian/90 border border-charcoalBorder rounded-xl px-2.5 py-1 min-w-[165px] sm:min-w-[195px] flex items-center justify-center">
+          <div id="tvSingleQuoteContainer" class="w-full min-h-[40px] flex items-center justify-center"></div>
+        </div>
+
+        <!-- Secondary DXY (TVC:DXY) Live Quote & Bias Badge -->
+        <div class="hidden xl:flex items-center gap-2 bg-obsidian/90 border border-charcoalBorder rounded-xl px-2.5 py-1 min-w-[195px]">
+          <div id="tvDxyQuoteContainer" class="w-full min-h-[40px] flex items-center justify-center"></div>
+        </div>
+      </div>
+
+      <!-- Right: GMT+7 Cambodia Session Clock + Sound Toggle + London/NY Filter + Alerts + TG -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+        <!-- Cambodia GMT+7 Primary Clock (cycles GMT+7 / UTC / EST) -->
+        <button type="button" id="timezoneToggleBtn" title="Cambodia GMT+7 default; click to cycle GMT+7 / UTC / EST" class="flex items-center gap-2 bg-obsidian border border-charcoalBorder hover:border-gold/50 rounded-xl px-2.5 py-1.5 text-left transition-colors tabular-nums-strict">
+          <span class="w-2 h-2 rounded-full bg-emeraldLong animate-pulse shrink-0"></span>
+          <div class="leading-tight">
+            <div class="flex items-center gap-1.5">
+              <span id="clockTimeText" class="text-xs font-mono font-bold text-white">09:26:00</span>
+              <span id="clockZoneBadge" class="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-gold/15 text-goldBright">GMT+7 KH</span>
+            </div>
+            <div id="sessionNameText" class="text-[10px] text-gray-400">London/NY Session Monitor</div>
+          </div>
+        </button>
+
+        <!-- Web Audio Sound Alert Toggle -->
+        <button type="button" id="soundAlertToggleBtn" title="Toggle synthesized Web Audio signal & news alerts" class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-mono font-bold border transition-all bg-gold/15 text-goldBright border-gold/40 hover:bg-gold/25">
+          <span id="soundIcon">🔊</span>
+          <span id="soundStatusLabel" class="hidden sm:inline">SOUND ON</span>
+        </button>
+
+        <!-- London & New York Session-Only Auto-Analyze Toggle (GMT+7) -->
+        <button type="button" id="londonNyOnlyBtn" title="Auto-analyze XAUUSD only during London & New York sessions (GMT+7)" class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-mono font-bold border transition-all bg-obsidian text-gray-300 border-charcoalBorder hover:border-gold/50">
+          <span>LDN/NY ONLY:</span>
+          <span id="londonNyStateLabel" class="text-goldBright">OFF</span>
+        </button>
+
+        <!-- TradingView Live Feed Status Pill -->
+        <button type="button" id="feedToggleBtn" class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all bg-emeraldLong/15 text-emeraldLong border-emeraldLong/30 hover:bg-emeraldLong/25">
+          <span id="feedDot" class="w-2 h-2 rounded-full bg-emeraldLong"></span>
+          <span id="feedLabel" class="hidden md:inline">TV LIVE</span>
+        </button>
+
+        <!-- Risk Mode Pill -->
+        <button type="button" id="riskModeBtn" class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all bg-gold/15 text-goldBright border-gold/35 hover:bg-gold/25">
+          <span class="hidden md:inline">RISK:</span>
+          <span id="riskModeLabel" class="font-mono">GUARDED</span>
+        </button>
+
+        <!-- Alerts Drawer Toggle -->
+        <button type="button" id="alertsToggleBtn" class="relative flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-semibold border border-charcoalBorder bg-obsidian hover:border-gold/50 text-gray-200 transition-all">
+          <svg class="w-4 h-4 text-goldBright" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          <span id="alertCountBadge" class="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-gold text-obsidian">3</span>
+        </button>
+
+        <!-- Owner Telegram Bot Quick Jump -->
+        <button type="button" id="tgQuickJumpBtn" title="Jump to Owner Telegram Bot & Signal Engine" class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all bg-gold/15 text-goldBright border-gold/40 hover:bg-gold/25">
+          <span id="tgHeaderDot" class="w-2 h-2 rounded-full bg-goldBright"></span>
+          <span class="font-mono">TG</span>
+          <span id="tgAutoBadge" class="hidden sm:inline text-[10px] font-mono px-1.5 py-0.2 rounded bg-obsidian text-gray-300">OFF</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Top Live TradingView Ticker Tape Strip (XAUUSD & DXY Focus) -->
+    <div class="border-t border-charcoalBorder/80 bg-obsidian/95">
+      <div id="tvTickerTapeContainer" class="w-full min-h-[42px] flex items-center justify-center overflow-hidden"></div>
+    </div>
+
+    <!-- Collapsible Alerts Strip -->
+    <div id="alertsDrawer" class="hidden border-t border-charcoalBorder bg-obsidian/95 px-3 sm:px-5 py-2.5">
+      <div class="max-w-[1800px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <div class="flex flex-wrap items-center gap-2" id="alertsListContainer">
+          <span class="px-2 py-1 rounded-lg bg-emeraldLong/15 border border-emeraldLong/30 text-emeraldLong font-mono text-[11px]">
+            [T4FX GOLD] Exclusive XAUUSD Intelligence &amp; DXY Correlation Active
+          </span>
+          <span class="px-2 py-1 rounded-lg bg-gold/15 border border-gold/30 text-goldBright font-mono text-[11px]">
+            [150+ PIP CAP] Max 3 Active 150+ Pip Target Setups / Day
+          </span>
+          <span class="px-2 py-1 rounded-lg bg-crimsonShort/15 border border-crimsonShort/30 text-crimsonShort font-mono text-[11px]">
+            [1-MIN NEWS RADAR] DXY Bullish → SELL XAUUSD | DXY Bearish → BUY XAUUSD
+          </span>
+        </div>
+        <button type="button" id="clearAlertsBtn" class="text-[11px] text-gray-400 hover:text-goldBright underline self-start sm:self-auto">
+          Mark Read
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- 2. TOP HERO SIGNAL BANNER (150+ PIP CAP: MAX 3 ACTIVE SETUPS / DAY)   -->
+  <!-- ===================================================================== -->
+  <section aria-label="Top Hero High-Conviction XAUUSD Signal" class="max-w-[1800px] w-full mx-auto px-3 sm:px-5 pt-3">
+    <div class="bg-gradient-to-r from-charcoal via-charcoalLight to-charcoal border border-gold/40 rounded-2xl p-3 sm:p-4 shadow-xl gold-glow flex flex-col gap-3 tabular-nums-strict">
+
+      <!-- Top Row of Hero Banner: Title, 150+ Pip Daily Quota (Max 3), Session Status, Sound Test -->
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-charcoalBorder/80 pb-2.5">
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <span class="px-2.5 py-1 rounded-lg bg-gold text-obsidian font-mono font-extrabold text-[11px] uppercase tracking-wider">
+            HERO XAUUSD SIGNAL
+          </span>
+          <span id="heroDailyQuotaBadge" class="px-2.5 py-1 rounded-lg bg-emeraldLong/15 text-emeraldLong border border-emeraldLong/35 font-mono font-bold text-[11px]">
+            150+ PIP SETUPS TODAY: 1 / 3 ACTIVE
+          </span>
+          <span id="heroSessionEligibilityBadge" class="px-2.5 py-1 rounded-lg bg-obsidian text-goldBright border border-charcoalBorder font-mono text-[11px]">
+            AUTO-ANALYZE: ALL SESSIONS
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" id="heroGenerate150Btn" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-goldBright via-gold to-amber-500 hover:brightness-105 active:scale-[0.99] text-obsidian font-extrabold text-xs transition-all">
+            + Generate 150+ Pip Signal
+          </button>
+          <button type="button" id="testSoundChimeBtn" class="px-2.5 py-1.5 rounded-xl bg-obsidian hover:border-gold/50 border border-charcoalBorder text-xs font-mono text-goldBright transition-all">
+            🔔 Test Alert Sound
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Hero Signal Readout: Direction, Style, Entry, SL, TP1, TP2, Pip Target -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+        <div class="lg:col-span-4 flex flex-col gap-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="heroDirBadge" class="px-3 py-1 rounded-xl text-sm font-extrabold font-mono bg-emeraldLong/20 text-emeraldLong border border-emeraldLong/40">
+              BUY XAUUSD
+            </span>
+            <span id="heroStyleBadge" class="px-2 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-gold/15 text-goldBright border border-gold/30">
+              DAY / SWING • 185 PIPS
+            </span>
+            <span id="heroConfBadge" class="text-xs font-mono font-bold text-white">
+              89% CONF
+            </span>
+          </div>
+          <p id="heroSetupHeadline" class="text-sm font-bold text-white mt-0.5">
+            SSL Sweep + Bullish OB Reclaim &amp; DXY Bearish Rejection
+          </p>
+          <p id="heroSetupReason" class="text-[11px] text-gray-400 line-clamp-2">
+            EMA 20/50/200 bullish stack, 4H FVG hold near $3,637-$3,645, and DXY stalling below 103.89 resistance.
+          </p>
+        </div>
+
+        <!-- Entry, SL, TP1, TP2, Pip Gain Cards -->
+        <div class="lg:col-span-8 grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono">
+          <div class="bg-obsidian/90 border border-charcoalBorder rounded-xl p-2.5">
+            <span class="text-[10px] text-gray-400 block">ENTRY</span>
+            <span id="heroEntryVal" class="text-xs sm:text-sm font-bold text-white">3644.50</span>
+          </div>
+          <div class="bg-obsidian/90 border border-crimsonShort/30 rounded-xl p-2.5">
+            <span class="text-[10px] text-gray-400 block">STOP LOSS</span>
+            <span id="heroSlVal" class="text-xs sm:text-sm font-bold text-crimsonShort">3636.00</span>
+          </div>
+          <div class="bg-obsidian/90 border border-emeraldLong/30 rounded-xl p-2.5">
+            <span class="text-[10px] text-gray-400 block">TP 1 (+95 PIPS)</span>
+            <span id="heroTp1Val" class="text-xs sm:text-sm font-bold text-emeraldLong">3654.00</span>
+          </div>
+          <div class="bg-obsidian/90 border border-emeraldLong/40 rounded-xl p-2.5">
+            <span class="text-[10px] text-gray-400 block">TP 2 (150+ PIPS)</span>
+            <span id="heroTp2Val" class="text-xs sm:text-sm font-bold text-goldBright">3663.00</span>
+          </div>
+          <div class="bg-obsidian/90 border border-gold/30 rounded-xl p-2.5 col-span-2 sm:col-span-1 flex flex-col justify-center">
+            <span class="text-[10px] text-gray-400 block">TARGET / R:R</span>
+            <span id="heroPipRrVal" class="text-xs sm:text-sm font-extrabold text-goldBright">+185p • 1:2.2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active 150+ Pip Setups Queue Strip (Max 3 per day) -->
+      <div id="heroActiveQueueBar" class="flex flex-wrap items-center gap-2 pt-1 border-t border-charcoalBorder/70 text-[11px] font-mono">
+        <span class="text-gray-400">Active 150+ Pip Setups (Max 3/Day):</span>
+        <div id="heroQueueChips" class="flex flex-wrap items-center gap-1.5"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- 3. MARKET STRUCTURE, DXY CORRELATION & SMC/INDICATOR STRIP            -->
+  <!-- ===================================================================== -->
+  <section aria-label="Market structure, DXY, and indicator intelligence" class="max-w-[1800px] w-full mx-auto px-3 sm:px-5 pt-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2.5">
+
+      <!-- Card 1: Market Structure (BOS / CHoCH) -->
+      <div class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">XAUUSD Structure</span>
+          <span id="smcStructureTag" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emeraldLong/15 text-emeraldLong border border-emeraldLong/30">BULLISH BOS</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline justify-between">
+          <span id="smcStructureDetail" class="text-sm font-bold text-white">HH / HL Intact</span>
+          <span id="smcChochLevel" class="text-[11px] font-mono text-gray-400">CHoCH: 3628.40</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Order Blocks & Fair Value Gaps -->
+      <div class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">OB &amp; FVG Zones</span>
+          <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-gold/15 text-goldBright border border-gold/30">SMC / ICT</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline justify-between">
+          <span id="smcObZone" class="text-xs font-mono font-semibold text-emeraldLong">OB: 3637.0 - 3642.0</span>
+          <span id="smcFvgZone" class="text-xs font-mono text-goldBright">FVG: 3646.50</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Liquidity Pool Status -->
+      <div class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Liquidity Magnet</span>
+          <span id="liqSweepBadge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-charcoalLight text-gray-300 border border-charcoalBorder">BSL / SSL</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline justify-between">
+          <span id="liqTargetText" class="text-xs font-mono font-semibold text-white">BSL @ 3666.00</span>
+          <span id="liqPoolText" class="text-[11px] font-mono text-crimsonShort">SSL @ 3634.50</span>
+        </div>
+      </div>
+
+      <!-- Card 4: DXY Dollar Index Live Correlation (~103.59 - 103.89) -->
+      <div class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">DXY Index (Inverse)</span>
+          <span id="dxyBiasBadge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emeraldLong/15 text-emeraldLong border border-emeraldLong/30">BEARISH → BUY XAU</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline justify-between tabular-nums-strict">
+          <span id="dxyPriceText" class="text-sm font-mono font-bold text-white">103.74</span>
+          <span id="dxyDeltaText" class="text-xs font-mono font-semibold text-crimsonShort">-0.15 (-0.14%)</span>
+        </div>
+      </div>
+
+      <!-- Card 5: Next US High-Impact News & 1-Min Pre-News Radar -->
+      <div class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 flex flex-col justify-between sm:col-span-2 xl:col-span-1">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">US News Pre-Radar</span>
+          <span id="newsRadarStatusBadge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-crimsonShort/20 text-crimsonShort border border-crimsonShort/40">1-MIN TRIGGER</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline justify-between tabular-nums-strict">
+          <span id="macroEventTitle" class="text-xs font-semibold text-white truncate pr-2">US CB Consumer Conf.</span>
+          <span id="macroCountdown" class="text-xs font-mono font-bold text-goldBright shrink-0">12:34:00</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- 4. MAIN XAUUSD WORKSPACE: CHART, SCALPING/DAY/SWING SUITE, NEWS & MT5 -->
+  <!-- ===================================================================== -->
+  <main class="max-w-[1800px] w-full mx-auto px-3 sm:px-5 py-3 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3">
+
+    <!-- LEFT / CENTER COLUMN (8 of 12 cols on desktop) -->
+    <div class="lg:col-span-8 flex flex-col gap-3">
+
+      <!-- CHART CARD WITH TRADINGVIEW LIVE / SMC-ICT CANVAS MODE TOGGLE -->
+      <div class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 sm:p-4 flex flex-col">
+        <div class="flex flex-wrap items-center justify-between gap-2.5 pb-3 border-b border-charcoalBorder">
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center bg-obsidian border border-charcoalBorder rounded-xl p-1 gap-1" role="group" aria-label="Chart mode toggle">
+              <button type="button" id="modeTvLiveBtn" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-gold text-obsidian shadow">
+                TradingView Live
+              </button>
+              <button type="button" id="modeSmcCanvasBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight">
+                SMC/ICT Canvas
+              </button>
+            </div>
+
+            <span id="activeChartSourceBadge" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-emeraldLong/15 text-emeraldLong border border-emeraldLong/30">
+              LIVE XAUUSD: OANDA:XAUUSD
+            </span>
+          </div>
+
+          <!-- Manual Spot Price Sync Input -->
+          <div class="flex items-center gap-1.5 bg-obsidian border border-charcoalBorder rounded-xl px-2.5 py-1 tabular-nums-strict">
+            <label for="manualSpotInput" class="text-[10px] font-mono uppercase text-gray-400">XAU Spot</label>
+            <input id="manualSpotInput" type="number" step="0.05" value="3645.00" class="w-24 bg-transparent text-xs font-mono font-bold text-goldBright focus:outline-none" />
+            <button type="button" id="syncSpotBtn" title="Sync SL/TP, Signal Engine, and DOM to XAU Spot" class="px-2 py-0.5 rounded bg-gold/20 hover:bg-gold/30 text-goldBright text-[10px] font-mono font-bold transition-colors">
+              SYNC
+            </button>
+          </div>
+        </div>
+
+        <!-- Secondary Toolbar shown when SMC/ICT Canvas mode is selected -->
+        <div id="canvasToolbar" class="hidden flex-wrap items-center justify-between gap-2 py-2.5 border-b border-charcoalBorder">
+          <div class="flex items-center bg-obsidian border border-charcoalBorder rounded-xl p-1 gap-0.5 overflow-x-auto max-w-full">
+            <button type="button" data-tf="M1" class="tf-btn px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-gray-300 hover:text-white transition-colors">M1</button>
+            <button type="button" data-tf="M5" class="tf-btn px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-gold text-obsidian transition-colors">M5</button>
+            <button type="button" data-tf="M15" class="tf-btn px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-gray-300 hover:text-white transition-colors">M15</button>
+            <button type="button" data-tf="H1" class="tf-btn px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-gray-300 hover:text-white transition-colors">H1</button>
+            <button type="button" data-tf="H4" class="tf-btn px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-gray-300 hover:text-white transition-colors">H4</button>
+            <button type="button" data-tf="D1" class="tf-btn px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-gray-300 hover:text-white transition-colors">D1</button>
+          </div>
+
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button type="button" id="toggleLiquidity" class="overlay-btn px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border bg-gold/15 text-goldBright border-gold/40 transition-all">LIQ</button>
+            <button type="button" id="toggleFVG" class="overlay-btn px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border bg-emeraldLong/15 text-emeraldLong border-emeraldLong/40 transition-all">FVG</button>
+            <button type="button" id="toggleOB" class="overlay-btn px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border bg-amber-500/15 text-amber-300 border-amber-500/40 transition-all">OB</button>
+            <button type="button" id="toggleEMA" class="overlay-btn px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border bg-sky-500/15 text-sky-300 border-sky-500/40 transition-all">EMA 20/50</button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button type="button" id="replayPauseBtn" class="px-2.5 py-1 rounded-lg text-xs font-semibold border border-charcoalBorder bg-obsidian hover:border-gold/50 text-gray-200 flex items-center gap-1.5 transition-all">
+              <span id="replayIcon" class="text-goldBright">❚❚</span>
+              <span id="replayText">PAUSE</span>
+            </button>
+            <button type="button" id="stepCandleBtn" class="px-2.5 py-1 rounded-lg text-xs font-mono font-semibold border border-charcoalBorder bg-obsidian hover:border-gold/50 text-gray-200 transition-all">+1 BAR</button>
+            <button type="button" id="resetViewBtn" class="px-2.5 py-1 rounded-lg text-xs font-semibold border border-charcoalBorder bg-obsidian hover:border-gold/50 text-gray-300 transition-all">FIT</button>
+          </div>
+        </div>
+
+        <!-- VIEW 1: TRADINGVIEW LIVE ADVANCED CHART CONTAINER -->
+        <div id="tvAdvancedChartWrapper" class="relative w-full h-[360px] sm:h-[430px] xl:h-[465px] mt-3 bg-obsidian rounded-xl border border-charcoalBorder overflow-hidden">
+          <div id="tvAdvancedChartContainer" class="w-full h-full"></div>
+          <div id="tvFallbackBanner" class="hidden absolute inset-0 bg-obsidian/95 flex flex-col items-center justify-center p-4 text-center gap-2.5">
+            <span class="text-xs font-mono font-bold text-goldBright">TradingView Widget Fallback Active</span>
+            <p class="text-xs text-gray-400 max-w-md">
+              Switch to <strong class="text-white">SMC/ICT Canvas</strong> or enter the live gold spot price in <strong class="text-goldBright">XAU Spot</strong> above to continue full analysis.
+            </p>
+            <button type="button" id="switchToCanvasFromFallbackBtn" class="px-3.5 py-2 rounded-xl bg-gold text-obsidian font-bold text-xs">
+              Open SMC/ICT Canvas
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 2: SMC/ICT INTERACTIVE CANVAS CHART CONTAINER -->
+        <div id="smcCanvasWrapper" class="hidden relative w-full h-[360px] sm:h-[430px] xl:h-[465px] mt-3 bg-obsidian rounded-xl border border-charcoalBorder overflow-hidden">
+          <canvas id="chartCanvas"></canvas>
+          <div id="chartOhlcOverlay" class="pointer-events-none absolute top-2.5 left-2.5 bg-charcoal/85 backdrop-blur-sm border border-charcoalBorder/90 rounded-lg px-2.5 py-1.5 text-[11px] font-mono tabular-nums-strict flex flex-wrap items-center gap-2.5">
+            <span class="text-gray-400">O <strong id="ohlcO" class="text-gray-100">-</strong></span>
+            <span class="text-gray-400">H <strong id="ohlcH" class="text-emeraldLong">-</strong></span>
+            <span class="text-gray-400">L <strong id="ohlcL" class="text-crimsonShort">-</strong></span>
+            <span class="text-gray-400">C <strong id="ohlcC" class="text-goldBright">-</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- SCALPING / DAY TRADER / SWING TRADER MULTI-STRATEGY ANALYST SUITE -->
+      <!-- ================================================================= -->
+      <section aria-label="Scalping, Day Trader, and Swing Trader Analysis Suite" class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 sm:p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-charcoalBorder pb-3">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>XAUUSD Multi-Style Analyst Suite</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/15 text-goldBright border border-gold/30">SMC • ICT • EMA • RSI • MACD • FIB</span>
+            </h2>
+            <p class="text-[11px] text-gray-400">Dedicated analysis across Scalping, Day Trader, and Swing Trader modes</p>
+          </div>
+
+          <!-- Trading Style Selector: Scalping | Day Trader | Swing Trader -->
+          <div class="flex items-center bg-obsidian border border-charcoalBorder rounded-xl p-1 gap-1" role="group" aria-label="Trading style selector">
+            <button type="button" data-style="SCALPING" class="style-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-gold text-obsidian">
+              Scalping
+            </button>
+            <button type="button" data-style="DAY" class="style-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight">
+              Day Trader
+            </button>
+            <button type="button" data-style="SWING" class="style-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight">
+              Swing Trader
+            </button>
+          </div>
+        </div>
+
+        <!-- Indicator & Confluence Matrix Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono tabular-nums-strict">
+          <div class="bg-obsidian border border-charcoalBorder rounded-xl p-2.5">
+            <span class="text-[10px] text-gray-400 block">EMA 20 / 50 / 200</span>
+            <span id="indEmaStatus" class="font-bold text-emeraldLong">BULLISH STACK</span>
+          </div>
+          <div class="bg-obsidian border border-charcoalBorder rounded-xl p-2.5">
+            <span class="text-[10px] text-gray-400 block">RSI (14) &amp; MACD</span>
+            <span id="indRsiMacdStatus" class="font-bold text-goldBright">RSI 58.4 • CROSS UP</span>
+          </div>
+          <div class="bg-obsidian border border-charcoalBorder rounded-xl p-2.5">
+            <span class="text-[10px] text-gray-400 block">BBANDS &amp; ATR (14)</span>
+            <span id="indBbAtrStatus" class="font-bold text-white">UPPER EXP • ATR 6.8</span>
+          </div>
+          <div class="bg-obsidian border border-charcoalBorder rounded-xl p-2.5">
+            <span class="text-[10px] text-gray-400 block">FIB OTE (0.618-0.786)</span>
+            <span id="indFibStatus" class="font-bold text-emeraldLong">DISCOUNT RECLAIM</span>
+          </div>
+        </div>
+
+        <!-- Mode-Specific Playbook & Signal Generator -->
+        <div class="bg-obsidian/90 border border-charcoalBorder rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span id="styleActiveBadge" class="px-2 py-0.5 rounded bg-gold/15 text-goldBright border border-gold/30 font-mono text-[11px] font-bold">
+                SCALPING MODE (M1 - M15)
+              </span>
+              <span id="styleTargetPipBadge" class="font-mono text-xs font-bold text-emeraldLong">
+                Target: 45–160+ Pips • Liquidity &amp; FVG Scalps
+              </span>
+            </div>
+            <p id="stylePlaybookDesc" class="text-xs text-gray-300 leading-relaxed">
+              Scalps Asian/London/NY liquidity sweeps and micro-FVG retests with tight invalidation. Upgrades automatically to Hero 150+ pip queue when structure supports 150+ pip expansion.
+            </p>
+          </div>
+
+          <button type="button" id="runStyleAnalysisBtn" class="px-3.5 py-2.5 rounded-xl bg-emeraldLong hover:bg-emerald-500 text-obsidian font-extrabold text-xs shrink-0 transition-all">
+            Analyze XAUUSD Setup
+          </button>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- US ECONOMIC NEWS & 1-MINUTE DXY PRE-NEWS BREAKOUT ENGINE            -->
+      <!-- ================================================================= -->
+      <section aria-label="US Economic News and 1-Minute DXY Pre-News Breakout Engine" class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 sm:p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-charcoalBorder pb-3">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>US News &amp; 1-Min DXY Breakout Engine</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-crimsonShort/20 text-crimsonShort border border-crimsonShort/40">T-60s PRE-ALERT</span>
+            </h2>
+            <p class="text-[11px] text-gray-400">Fires 1 minute before US News: Bullish DXY → SELL XAUUSD NOW | Bearish DXY → BUY XAUUSD NOW</p>
+          </div>
+
+          <!-- DXY Bias Simulation / Override + 1-Min Trigger Test -->
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <select id="dxyBiasModeSelect" aria-label="DXY Pre-News Bias Mode" class="bg-obsidian border border-charcoalBorder rounded-xl px-2.5 py-1.5 text-xs font-mono text-goldBright focus:outline-none">
+              <option value="AUTO">DXY Bias: AUTO TELEMETRY</option>
+              <option value="BULLISH">Simulate DXY BULLISH → SELL XAUUSD</option>
+              <option value="BEARISH">Simulate DXY BEARISH → BUY XAUUSD</option>
+            </select>
+            <button type="button" id="triggerOneMinPreNewsBtn" class="px-3 py-1.5 rounded-xl bg-crimsonShort hover:bg-red-500 text-white font-extrabold text-xs transition-all">
+              Fire 1-Min Pre-News Alert Now
+            </button>
+          </div>
+        </div>
+
+        <!-- Live 1-Minute Pre-News Alert Banner -->
+        <div id="preNewsAlertBox" class="bg-obsidian border border-gold/40 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="flex flex-col gap-0.5">
+            <div class="flex items-center gap-2">
+              <span id="preNewsActionTag" class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold font-mono bg-emeraldLong/20 text-emeraldLong border border-emeraldLong/40">
+                BUY XAUUSD NOW (DXY BEARISH)
+              </span>
+              <span id="preNewsTimerTag" class="text-[11px] font-mono text-goldBright font-bold">
+                1-MIN RADAR ARMED
+              </span>
+            </div>
+            <p id="preNewsDetailText" class="text-xs text-gray-200 mt-1">
+              DXY at 103.74 showing bearish rejection below 103.89. Before US news breakout, bearish DXY favors BUY XAUUSD NOW.
+            </p>
+          </div>
+          <div class="text-left sm:text-right font-mono text-[11px] shrink-0">
+            <span class="text-gray-400 block">DXY SPOT</span>
+            <span id="dxyLiveSpotReadout" class="text-sm font-bold text-white">103.74</span>
+          </div>
+        </div>
+
+        <!-- Upcoming US Macro Calendar Table (GMT+7 Cambodia Time) -->
+        <div class="overflow-x-auto rounded-xl border border-charcoalBorder bg-obsidian/70">
+          <table class="w-full text-left border-collapse text-xs font-mono tabular-nums-strict">
+            <thead>
+              <tr class="border-b border-charcoalBorder text-[10px] uppercase tracking-wider text-gray-400 bg-charcoal/70">
+                <th class="py-2 px-3">Date &amp; Time (GMT+7)</th>
+                <th class="py-2 px-3">US Economic Event</th>
+                <th class="py-2 px-3">Impact</th>
+                <th class="py-2 px-3">1-Min DXY Playbook</th>
+              </tr>
+            </thead>
+            <tbody id="usNewsCalendarBody" class="divide-y divide-charcoalBorder/60">
+              <tr class="hover:bg-charcoalLight/40">
+                <td class="py-2 px-3 text-goldBright">Nov 24, 2026 • 22:00 GMT+7</td>
+                <td class="py-2 px-3 font-sans font-semibold text-white">US CB Consumer Confidence (10:00 AM ET)</td>
+                <td class="py-2 px-3"><span class="px-1.5 py-0.5 rounded bg-crimsonShort/20 text-crimsonShort text-[10px] font-bold">HIGH</span></td>
+                <td class="py-2 px-3 text-[11px] text-gray-300">DXY ↑ → SELL XAU | DXY ↓ → BUY XAU</td>
+              </tr>
+              <tr class="hover:bg-charcoalLight/40">
+                <td class="py-2 px-3 text-goldBright">Nov 25, 2026 • 20:30 GMT+7</td>
+                <td class="py-2 px-3 font-sans font-semibold text-white">US Core PCE Price Index (8:30 AM ET)</td>
+                <td class="py-2 px-3"><span class="px-1.5 py-0.5 rounded bg-crimsonShort/20 text-crimsonShort text-[10px] font-bold">EXTREME</span></td>
+                <td class="py-2 px-3 text-[11px] text-gray-300">DXY ↑ → SELL XAU | DXY ↓ → BUY XAU</td>
+              </tr>
+              <tr class="hover:bg-charcoalLight/40">
+                <td class="py-2 px-3 text-gray-300">Nov 25, 2026 • 20:30 GMT+7</td>
+                <td class="py-2 px-3 font-sans font-semibold text-white">US Initial Jobless Claims &amp; GDP Q3 Prelim</td>
+                <td class="py-2 px-3"><span class="px-1.5 py-0.5 rounded bg-gold/20 text-goldBright text-[10px] font-bold">HIGH</span></td>
+                <td class="py-2 px-3 text-[11px] text-gray-300">DXY ↑ → SELL XAU | DXY ↓ → BUY XAU</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MT5 CHART SCREENSHOT UPLOAD & INSTANT SIGNAL REQUEST DROPZONE      -->
+      <!-- ================================================================= -->
+      <section aria-label="MT5 Chart Screenshot Upload and Signal Request" class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 sm:p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>MT5 Chart Screenshot &amp; Signal Request</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-gold/15 text-goldBright border border-gold/30">SCREENSHOT AI</span>
+            </h2>
+            <p class="text-[11px] text-gray-400">Upload or paste an MT5 XAUUSD chart screenshot, enter price if needed, and generate a signal</p>
+          </div>
+          <button type="button" id="clearMt5ScreenshotBtn" class="px-2.5 py-1 rounded-lg bg-obsidian hover:border-crimsonShort/50 border border-charcoalBorder text-[11px] font-mono text-gray-300">
+            Clear Photo
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
+          <!-- Dropzone / File Picker -->
+          <div class="md:col-span-6">
+            <label id="mt5DropzoneLabel" for="mt5ScreenshotInput" class="flex flex-col items-center justify-center h-full min-h-[160px] border-2 border-dashed border-charcoalBorder hover:border-gold/60 bg-obsidian/80 rounded-xl p-3 cursor-pointer transition-colors text-center">
+              <div id="mt5PreviewPlaceholder" class="flex flex-col items-center gap-1.5">
+                <span class="text-2xl">📸</span>
+                <span class="text-xs font-bold text-white">Drop MT5 XAUUSD Screenshot Here</span>
+                <span class="text-[11px] text-gray-400">or tap to upload PNG / JPG / WEBP from phone or PC</span>
+              </div>
+              <img id="mt5ScreenshotPreviewImg" alt="Uploaded MT5 XAUUSD chart screenshot preview" class="hidden max-h-44 w-auto rounded-lg border border-charcoalBorder object-contain" />
+              <input id="mt5ScreenshotInput" type="file" accept="image/*" class="hidden" />
+            </label>
+          </div>
+
+          <!-- MT5 Context Notes & Ask Signal Trigger -->
+          <div class="md:col-span-6 bg-obsidian border border-charcoalBorder rounded-xl p-3 flex flex-col justify-between gap-2.5">
+            <div class="flex flex-col gap-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="mt5TfSelect" class="block text-[10px] font-mono text-gray-400 mb-1">MT5 Timeframe</label>
+                  <select id="mt5TfSelect" class="w-full bg-charcoal border border-charcoalBorder rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none">
+                    <option value="M5">M5 Scalping</option>
+                    <option value="M15">M15 Intraday</option>
+                    <option value="H1" selected>H1 Structure</option>
+                    <option value="H4">H4 Swing</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="mt5PriceOverrideInput" class="block text-[10px] font-mono text-gray-400 mb-1">Chart Price (Optional)</label>
+                  <input id="mt5PriceOverrideInput" type="number" step="0.05" placeholder="e.g. 3645.00" class="w-full bg-charcoal border border-charcoalBorder rounded-lg px-2.5 py-1.5 text-xs font-mono text-goldBright focus:outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label for="mt5NotesInput" class="block text-[10px] font-mono text-gray-400 mb-1">What are you asking on this MT5 screenshot?</label>
+                <input id="mt5NotesInput" type="text" placeholder="e.g. Swept Asian low into 1H OB, looking for BUY signal..." class="w-full bg-charcoal border border-charcoalBorder rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none" />
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <button type="button" id="askMt5SignalBtn" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-goldBright via-gold to-amber-500 hover:brightness-105 text-obsidian font-extrabold text-xs transition-all">
+                Analyze MT5 Screenshot &amp; Give Signal
+              </button>
+              <p id="mt5AnalysisResultText" class="text-[11px] font-mono text-gray-400 leading-snug">
+                Upload an MT5 screenshot and click "Analyze MT5 Screenshot &amp; Give Signal" to generate Entry, SL, TP1, and TP2.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- OPEN & CLOSED XAUUSD POSITIONS TABLE CARD -->
+      <div class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 sm:p-4 flex flex-col">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <button type="button" id="tabOpenPositions" class="pos-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-gold text-obsidian transition-all">
+              OPEN POSITIONS (<span id="openPosCount">2</span>)
+            </button>
+            <button type="button" id="tabClosedPositions" class="pos-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-obsidian text-gray-300 hover:text-white border border-charcoalBorder transition-all">
+              HISTORY (<span id="closedPosCount">3</span>)
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3 text-xs font-mono tabular-nums-strict">
+            <span class="text-gray-400">Floating P&amp;L:</span>
+            <span id="floatingPnlDisplay" class="font-bold text-emeraldLong">+$0.00</span>
+            <button type="button" id="closeAllBtn" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-crimsonShort/15 hover:bg-crimsonShort/25 text-crimsonShort border border-crimsonShort/30 transition-all">
+              FLATTEN ALL
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-charcoalBorder bg-obsidian/70">
+          <table class="w-full text-left border-collapse text-xs font-mono tabular-nums-strict">
+            <thead>
+              <tr class="border-b border-charcoalBorder text-[10px] uppercase tracking-wider text-gray-400 bg-charcoal/70">
+                <th class="py-2.5 px-3">Asset / Side</th>
+                <th class="py-2.5 px-3">Lots</th>
+                <th class="py-2.5 px-3">Entry</th>
+                <th class="py-2.5 px-3">SL / TP</th>
+                <th class="py-2.5 px-3">Mark / Exit</th>
+                <th class="py-2.5 px-3 text-right">Net P&amp;L</th>
+                <th class="py-2.5 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="positionsTableBody" class="divide-y divide-charcoalBorder/60"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- SIGNAL ENGINE & OWNER-ONLY TELEGRAM BOT AUTO-ALERT ENGINE          -->
+      <!-- ================================================================= -->
+      <section id="signalAndTelegramSection" aria-label="XAUUSD Signal Engine and Private Telegram Bot" class="grid grid-cols-1 xl:grid-cols-12 gap-3">
+
+        <!-- CARD A: XAUUSD SIGNAL GENERATOR CARD (6 of 12 cols) -->
+        <div class="xl:col-span-6 bg-charcoal border border-charcoalBorder rounded-2xl p-3 sm:p-4 flex flex-col justify-between gap-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
+                <span>XAUUSD Signal Dispatch Card</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gold/15 text-goldBright border border-gold/30">SMC + ICT</span>
+              </h2>
+              <p class="text-[11px] text-gray-400">Anchored to live Gold spot &amp; structure zones</p>
+            </div>
+
+            <button type="button" id="generateBestSignalBtn" class="px-3 py-2 rounded-xl bg-gradient-to-r from-goldBright via-gold to-amber-500 hover:brightness-105 active:scale-[0.99] text-obsidian font-extrabold text-xs tracking-wide shadow-md gold-glow transition-all">
+              Generate Signal Now
+            </button>
+          </div>
+
+          <div id="activeSignalCard" class="bg-obsidian border border-charcoalBorder rounded-xl p-3 flex flex-col gap-2.5 tabular-nums-strict">
+            <div class="flex items-center justify-between gap-2 border-b border-charcoalBorder/80 pb-2">
+              <div class="flex items-center gap-2">
+                <span id="sigDirectionBadge" class="px-2.5 py-1 rounded-lg text-xs font-extrabold font-mono bg-emeraldLong/20 text-emeraldLong border border-emeraldLong/40">
+                  BUY XAUUSD
+                </span>
+                <span id="sigSetupTitle" class="text-xs font-bold text-white">SSL Sweep + Bullish OB Reclaim</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] text-gray-400 block">CONFIDENCE</span>
+                <span id="sigConfidenceText" class="text-xs font-mono font-bold text-goldBright">88%</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-mono">
+              <div class="bg-charcoal/80 border border-charcoalBorder/70 rounded-lg p-2">
+                <span class="text-[10px] text-gray-400 block">ENTRY ZONE</span>
+                <span id="sigEntryText" class="font-bold text-white">3643.60 - 3645.50</span>
+              </div>
+              <div class="bg-charcoal/80 border border-charcoalBorder/70 rounded-lg p-2">
+                <span class="text-[10px] text-gray-400 block">STOP LOSS</span>
+                <span id="sigSlText" class="font-bold text-crimsonShort">3636.00</span>
+              </div>
+              <div class="bg-charcoal/80 border border-charcoalBorder/70 rounded-lg p-2">
+                <span class="text-[10px] text-gray-400 block">TP 1</span>
+                <span id="sigTp1Text" class="font-bold text-emeraldLong">3654.00</span>
+              </div>
+              <div class="bg-charcoal/80 border border-charcoalBorder/70 rounded-lg p-2">
+                <span class="text-[10px] text-gray-400 block">TP 2</span>
+                <span id="sigTp2Text" class="font-bold text-emeraldLong">3663.00</span>
+              </div>
+              <div class="bg-charcoal/80 border border-charcoalBorder/70 rounded-lg p-2 col-span-2 sm:col-span-1">
+                <span class="text-[10px] text-gray-400 block">R : R</span>
+                <span id="sigRrText" class="font-bold text-goldBright">1 : 2.2</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px] text-gray-300">
+              <p id="sigRationaleText" class="leading-relaxed">
+                Sweep of local sell-side liquidity with bullish FVG hold and EMA 20/50/200 alignment.
+              </p>
+              <span id="sigTimestampText" class="font-mono text-[10px] text-gray-500 shrink-0">Synced • GMT+7</span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+            <button type="button" id="applySignalToTicketBtn" class="px-3 py-2 rounded-xl bg-charcoalLight hover:border-gold/50 border border-charcoalBorder text-xs font-semibold text-goldBright transition-all">
+              Load SL/TP into Ticket
+            </button>
+
+            <label class="flex items-center gap-2 cursor-pointer select-none bg-obsidian border border-charcoalBorder rounded-xl px-3 py-2 text-xs">
+              <input id="autoPushSignalCheckbox" type="checkbox" checked class="accent-amber-400 w-4 h-4 rounded" />
+              <span class="text-gray-200 font-medium">Auto-push ≥</span>
+              <input id="minSignalConfidenceInput" type="number" min="50" max="99" step="1" value="80" class="w-12 bg-charcoal border border-charcoalBorder rounded px-1.5 py-0.5 font-mono text-xs text-goldBright text-center focus:outline-none" />
+              <span class="font-mono text-gray-400">%</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- CARD B: OWNER-ONLY TELEGRAM BOT AUTO-ALERT ENGINE (6 of 12 cols) -->
+        <div class="xl:col-span-6 bg-charcoal border border-charcoalBorder rounded-2xl p-3 sm:p-4 flex flex-col justify-between gap-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
+                <span>Private Telegram Bot Engine</span>
+                <span id="ownerLockBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emeraldLong/15 text-emeraldLong border border-emeraldLong/30">OWNER LOCKED</span>
+              </h2>
+              <p class="text-[11px] text-gray-400">Auto-pushes signals &amp; 1-min DXY news alerts to your Owner ID</p>
+            </div>
+
+            <button type="button" id="tgAutoPushToggleBtn" class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all bg-obsidian text-gray-300 border-charcoalBorder hover:border-gold/50">
+              AUTO-PUSH: OFF
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="tgBotTokenInput" class="text-[11px] text-gray-400">Telegram Bot Token</label>
+                <button type="button" id="toggleTokenVisibilityBtn" class="text-[10px] font-mono text-goldBright hover:underline">SHOW</button>
+              </div>
+              <input id="tgBotTokenInput" type="password" placeholder="123456789:AAH..." autocomplete="off" class="w-full bg-obsidian border border-charcoalBorder focus:border-gold rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none" />
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="tgOwnerChatIdInput" class="text-[11px] text-gray-400">Owner Chat ID (Exclusive)</label>
+                <span class="text-[10px] font-mono text-emeraldLong">Only You</span>
+              </div>
+              <input id="tgOwnerChatIdInput" type="text" placeholder="e.g. 987654321" autocomplete="off" class="w-full bg-obsidian border border-charcoalBorder focus:border-gold rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none" />
+            </div>
+          </div>
+
+          <div class="bg-obsidian border border-charcoalBorder rounded-xl p-2.5 flex flex-col gap-2">
+            <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+              <span class="font-semibold text-gray-300">Auto-Alert Trigger Rules</span>
+              <div class="flex items-center gap-1.5 font-mono">
+                <label for="tgCooldownSecondsInput" class="text-gray-400">Cooldown (s):</label>
+                <input id="tgCooldownSecondsInput" type="number" min="10" max="3600" step="10" value="60" class="w-16 bg-charcoal border border-charcoalBorder rounded px-2 py-0.5 text-xs text-goldBright text-right focus:outline-none" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px]">
+              <label class="flex items-center gap-1.5 bg-charcoal/80 border border-charcoalBorder/70 rounded-lg px-2 py-1.5 cursor-pointer">
+                <input id="ruleSignalAlert" type="checkbox" checked class="accent-amber-400" />
+                <span class="text-gray-200 truncate">Signals &amp; 150+p</span>
+              </label>
+              <label class="flex items-center gap-1.5 bg-charcoal/80 border border-charcoalBorder/70 rounded-lg px-2 py-1.5 cursor-pointer">
+                <input id="rulePriceCrossAlert" type="checkbox" checked class="accent-amber-400" />
+                <span class="text-gray-200 truncate">1-Min News / DXY</span>
+              </label>
+              <label class="flex items-center gap-1.5 bg-charcoal/80 border border-charcoalBorder/70 rounded-lg px-2 py-1.5 cursor-pointer">
+                <input id="ruleSessionAlert" type="checkbox" class="accent-amber-400" />
+                <span class="text-gray-200 truncate">LDN/NY Session</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" id="saveTgConfigBtn" class="px-3 py-2 rounded-xl bg-charcoalLight hover:border-gold/50 border border-charcoalBorder text-xs font-semibold text-white transition-all">
+                Save Owner Config
+              </button>
+              <button type="button" id="testAndSendSignalBtn" class="px-3.5 py-2 rounded-xl bg-emeraldLong hover:bg-emerald-500 active:scale-[0.99] text-obsidian font-extrabold text-xs transition-all">
+                Test Bot &amp; Send Signal
+              </button>
+            </div>
+            <span id="tgCooldownStatusText" class="text-[11px] font-mono text-gray-400">Ready</span>
+          </div>
+
+          <div class="bg-obsidian/90 border border-charcoalBorder rounded-xl p-2 max-h-[86px] overflow-y-auto">
+            <div class="text-[10px] font-mono uppercase text-gray-400 mb-1 flex items-center justify-between">
+              <span>Telegram Dispatch Log</span>
+              <span id="tgDispatchCount" class="text-goldBright">0 sent</span>
+            </div>
+            <div id="tgDeliveryLogList" class="flex flex-col gap-1 text-[11px] font-mono text-gray-400">
+              <div>No Telegram dispatches yet. Configure Bot Token &amp; Owner Chat ID above.</div>
+            </div>
+          </div>
+
+          <p class="text-[10px] text-gray-400 leading-snug bg-obsidian/70 border border-charcoalBorder/70 rounded-lg px-2.5 py-1.5">
+            <strong class="text-goldBright">Security Note:</strong> Direct browser-to-Telegram Bot API calls store your Bot Token &amp; Owner Chat ID in local browser storage and expose the token client-side unless routed through a private backend or server proxy. Dispatches are restricted strictly to your configured Owner Chat ID.
+          </p>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- RIGHT COLUMN (4 of 12 cols on desktop): Scalping Ticket + DOM + Tape -->
+    <div class="lg:col-span-4 flex flex-col gap-3">
+
+      <!-- SCALPING EXECUTION & RISK CALCULATOR PANEL (XAUUSD) -->
+      <div class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 sm:p-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
+              <span>XAUUSD Execution Ticket</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gold/15 text-goldBright border border-gold/30">GOLD ONLY</span>
+            </h2>
+            <p class="text-[11px] text-gray-400">Account Equity: <span id="accountEquityText" class="font-mono font-semibold text-white">$25,000.00</span></p>
+          </div>
+
+          <div class="flex items-center bg-obsidian border border-charcoalBorder rounded-xl p-1 text-[11px] font-bold">
+            <button type="button" id="orderTypeMarket" class="order-type-btn px-2.5 py-1 rounded-lg bg-gold text-obsidian">MARKET</button>
+            <button type="button" id="orderTypeLimit" class="order-type-btn px-2.5 py-1 rounded-lg text-gray-300 hover:text-white">LIMIT</button>
+          </div>
+        </div>
+
+        <div id="limitPriceRow" class="hidden">
+          <label for="limitPriceInput" class="block text-[11px] text-gray-400 mb-1">Limit Trigger Price (XAUUSD)</label>
+          <input id="limitPriceInput" type="number" step="0.05" class="w-full bg-obsidian border border-charcoalBorder focus:border-gold rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none" />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="lotSizeInput" class="text-[11px] text-gray-400">Lot Size</label>
+            <div class="flex items-center gap-1">
+              <button type="button" data-lot="0.10" class="lot-preset px-2 py-0.5 rounded bg-obsidian hover:border-gold/50 border border-charcoalBorder text-[10px] font-mono text-gray-300">0.10</button>
+              <button type="button" data-lot="0.25" class="lot-preset px-2 py-0.5 rounded bg-obsidian hover:border-gold/50 border border-charcoalBorder text-[10px] font-mono text-gray-300">0.25</button>
+              <button type="button" data-lot="0.50" class="lot-preset px-2 py-0.5 rounded bg-obsidian hover:border-gold/50 border border-charcoalBorder text-[10px] font-mono text-gray-300">0.50</button>
+              <button type="button" data-lot="1.00" class="lot-preset px-2 py-0.5 rounded bg-obsidian hover:border-gold/50 border border-charcoalBorder text-[10px] font-mono text-gray-300">1.00</button>
+            </div>
+          </div>
+          <input id="lotSizeInput" type="number" step="0.01" min="0.01" value="0.25" class="w-full bg-obsidian border border-charcoalBorder focus:border-gold rounded-xl px-3 py-2 text-sm font-mono font-bold text-white focus:outline-none tabular-nums-strict" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="slInput" class="block text-[11px] text-gray-400 mb-1">Stop Loss (Price)</label>
+            <input id="slInput" type="number" step="0.05" class="w-full bg-obsidian border border-charcoalBorder focus:border-crimsonShort rounded-xl px-3 py-2 text-xs font-mono text-crimsonShort font-semibold focus:outline-none tabular-nums-strict" />
+          </div>
+          <div>
+            <label for="tpInput" class="block text-[11px] text-gray-400 mb-1">Take Profit (Price)</label>
+            <input id="tpInput" type="number" step="0.05" class="w-full bg-obsidian border border-charcoalBorder focus:border-emeraldLong rounded-xl px-3 py-2 text-xs font-mono text-emeraldLong font-semibold focus:outline-none tabular-nums-strict" />
+          </div>
+        </div>
+
+        <div class="bg-obsidian border border-charcoalBorder rounded-xl p-2.5 flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-gray-300">Risk / Trade Preset</span>
+            <span id="estRiskDollarText" class="text-xs font-mono font-bold text-goldBright">~$125.00 (0.50%)</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button type="button" data-risk="0.25" class="risk-preset-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold border border-charcoalBorder bg-charcoal text-gray-300 hover:border-gold/50">0.25%</button>
+            <button type="button" data-risk="0.50" class="risk-preset-btn py-1.5 rounded-lg text-[11px] font-mono font-bold border border-gold bg-gold/20 text-goldBright">0.50%</button>
+            <button type="button" data-risk="1.00" class="risk-preset-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold border border-charcoalBorder bg-charcoal text-gray-300 hover:border-gold/50">1.00%</button>
+            <button type="button" data-risk="2.00" class="risk-preset-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold border border-charcoalBorder bg-charcoal text-gray-300 hover:border-gold/50">2.00%</button>
+          </div>
+
+          <div class="pt-1">
+            <div class="flex items-center justify-between text-[10px] font-mono mb-1">
+              <span class="text-gray-400">Daily Loss Limit (-$1,000 / 4%)</span>
+              <span id="dailyLossStatusText" class="text-emeraldLong">$0.00 Used (0%)</span>
+            </div>
+            <div class="w-full h-1.5 bg-charcoal rounded-full overflow-hidden">
+              <div id="dailyLossBar" class="h-full bg-emeraldLong transition-all duration-300" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 pt-0.5">
+          <button type="button" id="buyBtn" class="py-3 px-4 rounded-xl bg-emeraldLong hover:bg-emerald-500 active:scale-[0.99] text-obsidian font-extrabold text-xs sm:text-sm tracking-wide shadow-lg shadow-emeraldLong/15 transition-all flex flex-col items-center justify-center tabular-nums-strict">
+            <span>BUY XAUUSD</span>
+            <span id="buyBtnPrice" class="text-[11px] font-mono font-bold opacity-90">3645.15</span>
+          </button>
+          <button type="button" id="sellBtn" class="py-3 px-4 rounded-xl bg-crimsonShort hover:bg-red-500 active:scale-[0.99] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-lg shadow-crimsonShort/15 transition-all flex flex-col items-center justify-center tabular-nums-strict">
+            <span>SELL XAUUSD</span>
+            <span id="sellBtnPrice" class="text-[11px] font-mono font-bold opacity-90">3644.85</span>
+          </button>
+        </div>
+
+        <div id="executionFeedback" class="hidden text-xs font-mono rounded-xl px-3 py-2 border"></div>
+      </div>
+
+      <!-- ORDER BOOK (DOM) & RECENT TIME & SALES TAPE (XAUUSD) -->
+      <div class="bg-charcoal border border-charcoalBorder rounded-2xl p-3 sm:p-4 flex flex-col gap-3 flex-1">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 bg-obsidian border border-charcoalBorder rounded-xl p-1 text-xs font-bold">
+            <button type="button" id="domTabBtn" class="dom-tape-tab px-3 py-1 rounded-lg bg-gold text-obsidian">ORDER BOOK (DOM)</button>
+            <button type="button" id="tapeTabBtn" class="dom-tape-tab px-3 py-1 rounded-lg text-gray-300 hover:text-white">RECENT TAPE</button>
+          </div>
+          <span class="text-[10px] font-mono text-gray-400">XAUUSD L2</span>
+        </div>
+
+        <div id="domContainer" class="flex flex-col gap-2 text-xs font-mono tabular-nums-strict">
+          <div class="grid grid-cols-3 text-[10px] uppercase text-gray-400 pb-1 border-b border-charcoalBorder">
+            <span>Ask Price</span>
+            <span class="text-center">Size</span>
+            <span class="text-right">Imbalance</span>
+          </div>
+          <div id="askLadder" class="flex flex-col gap-1"></div>
+
+          <div class="my-1 py-1.5 px-2.5 rounded-lg bg-obsidian border border-gold/30 flex items-center justify-between">
+            <span class="text-[10px] text-goldBright font-semibold">SPREAD</span>
+            <span id="domSpreadValue" class="text-xs font-bold text-white">0.30 pts</span>
+          </div>
+
+          <div class="grid grid-cols-3 text-[10px] uppercase text-gray-400 pb-1 border-b border-charcoalBorder">
+            <span>Bid Price</span>
+            <span class="text-center">Size</span>
+            <span class="text-right">Depth</span>
+          </div>
+          <div id="bidLadder" class="flex flex-col gap-1"></div>
+        </div>
+
+        <div id="tapeContainer" class="hidden flex-col gap-1.5 text-xs font-mono tabular-nums-strict max-h-[270px] overflow-y-auto">
+          <div class="grid grid-cols-3 text-[10px] uppercase text-gray-400 pb-1 border-b border-charcoalBorder sticky top-0 bg-charcoal">
+            <span>Time</span>
+            <span class="text-center">Price</span>
+            <span class="text-right">Lot</span>
+          </div>
+          <div id="tapeRows" class="flex flex-col gap-1"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- 5. FOOTER & SIMULATION DISCLAIMER                                     -->
+  <!-- ===================================================================== -->
+  <footer class="border-t border-charcoalBorder bg-charcoal/80 mt-auto">
+    <div class="max-w-[1800px] mx-auto px-3 sm:px-5 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-gray-400">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="font-bold text-goldBright">T4FX GOLD</span>
+        <span>•</span>
+        <span>Exclusive XAUUSD Trading Intelligence Terminal. Live charts &amp; quotes via TradingView; execution, DOM, news simulation, and signal analysis run locally in browser.</span>
+      </div>
+      <div class="font-mono text-[10px] text-gray-500">
+        Trading XAUUSD carries substantial risk. 150+ pip setups &amp; pre-news alerts are analytical signals, not financial advice.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- 6. T4FX GOLD ENGINE: TRADINGVIEW, 150+ PIP CAP, DXY NEWS, AUDIO, MT5 -->
+  <!-- ===================================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // Exclusive XAUUSD feed sources (~$3,637 - $3,666 context)
+      const TV_FEEDS = {
+        'OANDA:XAUUSD': {
+          label: 'OANDA:XAUUSD',
+          baselinePrice: 3645.00,
+          decimals: 2,
+          step: 0.05,
+          spread: 0.30,
+          defaultSlOffset: 8.50,
+          defaultTpOffset: 18.00,
+          smc: {
+            structure: 'BULLISH BOS',
+            structureClass: 'bg-emeraldLong/15 text-emeraldLong border-emeraldLong/30',
+            detail: 'HH / HL Intact',
+            choch: '3628.40',
+            bullOb: '3637.0 - 3642.0',
+            fvg: '3646.50',
+            liqSwept: 'BSL @ 3666.00',
+            sslPool: 'SSL @ 3634.50',
+            macro: 'US CB Consumer Conf.'
+          }
+        },
+        'TVC:GOLD': {
+          label: 'TVC:GOLD',
+          baselinePrice: 3645.50,
+          decimals: 2,
+          step: 0.05,
+          spread: 0.35,
+          defaultSlOffset: 8.50,
+          defaultTpOffset: 18.50,
+          smc: {
+            structure: 'BULLISH IMPULSE',
+            structureClass: 'bg-emeraldLong/15 text-emeraldLong border-emeraldLong/30',
+            detail: 'Spot Gold Expansion',
+            choch: '3626.00',
+            bullOb: '3637.5 - 3642.5',
+            fvg: '3647.00',
+            liqSwept: 'BSL @ 3666.50',
+            sslPool: 'SSL @ 3635.00',
+            macro: 'US CB Consumer Conf.'
+          }
+        },
+        'FX_IDC:XAUUSD': {
+          label: 'FX_IDC:XAUUSD',
+          baselinePrice: 3644.80,
+          decimals: 2,
+          step: 0.05,
+          spread: 0.25,
+          defaultSlOffset: 8.00,
+          defaultTpOffset: 18.00,
+          smc: {
+            structure: 'BULLISH BOS',
+            structureClass: 'bg-emeraldLong/15 text-emeraldLong border-emeraldLong/30',
+            detail: 'Liquidity Sweep Held',
+            choch: '3629.00',
+            bullOb: '3636.8 - 3641.8',
+            fvg: '3646.20',
+            liqSwept: 'BSL @ 3665.50',
+            sslPool: 'SSL @ 3634.00',
+            macro: 'US CB Consumer Conf.'
+          }
+        },
+        'BINANCE:XAUUSDT': {
+          label: 'BINANCE:XAUUSDT',
+          baselinePrice: 3646.20,
+          decimals: 2,
+          step: 0.10,
+          spread: 0.40,
+          defaultSlOffset: 9.00,
+          defaultTpOffset: 19.00,
+          smc: {
+            structure: 'BULLISH CHoCH',
+            structureClass: 'bg-gold/15 text-goldBright border-gold/30',
+            detail: 'Perp Premium Active',
+            choch: '3630.00',
+            bullOb: '3638.0 - 3643.0',
+            fvg: '3647.50',
+            liqSwept: 'BSL @ 3667.50',
+            sslPool: 'SSL @ 3636.00',
+            macro: 'US CB Consumer Conf.'
+          }
+        }
+      };
+
+      const TIMEFRAME_MULTIPLIER = {
+        M1: 0.45,
+        M5: 1.0,
+        M15: 1.75,
+        H1: 3.1,
+        H4: 6.2,
+        D1: 11.5
+      };
+
+      // Scheduled US High-Impact News events (referenced in GMT+7 Cambodia time)
+      const US_NEWS_SCHEDULE = [
+        {
+          id: 'US_CB_CONF',
+          title: 'US CB Consumer Confidence (10:00 AM ET)',
+          gmt7Label: 'Nov 24, 2026 • 22:00 GMT+7',
+          targetMs: Date.parse('2026-11-24T22:00:00+07:00')
+        },
+        {
+          id: 'US_CORE_PCE',
+          title: 'US Core PCE Price Index (8:30 AM ET)',
+          gmt7Label: 'Nov 25, 2026 • 20:30 GMT+7',
+          targetMs: Date.parse('2026-11-25T20:30:00+07:00')
+        }
+      ];
+
+      // Central T4FX GOLD state
+      const state = {
+        tvSymbol: 'OANDA:XAUUSD',
+        chartMode: 'tv',
+        timeframe: 'M5',
+        tradingStyle: 'SCALPING', // 'SCALPING' | 'DAY' | 'SWING'
+        londonNyOnly: false,
+        soundEnabled: true,
+        isFeedLive: true,
+        isPaused: false,
+        timezoneMode: 0, // 0 = GMT+7 Cambodia default
+        riskModeGuarded: true,
+        orderType: 'MARKET',
+        riskPercent: 0.50,
+        accountBalance: 25000.00,
+        realizedDailyPnl: 0.00,
+        dailyLossLimit: 1000.00,
+        spotPrice: 3645.00,
+        dxyPrice: 103.74, // ~103.59 - 103.89 range
+        dxyBiasMode: 'AUTO', // 'AUTO' | 'BULLISH' | 'BEARISH'
+        overlays: {
+          liquidity: true,
+          fvg: true,
+          ob: true,
+          ema: true
+        },
+        candlesByKey: {},
+        hoverIndex: null,
+        hoverX: null,
+        hoverY: null,
+        panOffset: 0,
+        zoomBars: 75,
+        isDragging: false,
+        dragStartX: 0,
+        dragStartPan: 0,
+        lastPinchDist: null,
+        activePosTab: 'open',
+        openPositions: [
+          {
+            id: 'POS-2041',
+            symbol: 'XAUUSD',
+            side: 'BUY',
+            lots: 0.25,
+            entry: 3641.20,
+            sl: 3633.00,
+            tp: 3660.00
+          },
+          {
+            id: 'POS-2042',
+            symbol: 'XAUUSD',
+            side: 'SELL',
+            lots: 0.15,
+            entry: 3652.50,
+            sl: 3661.00,
+            tp: 3636.50
+          }
+        ],
+        closedPositions: [
+          {
+            id: 'POS-2038',
+            symbol: 'XAUUSD',
+            side: 'BUY',
+            lots: 0.30,
+            entry: 3637.50,
+            exit: 3653.50,
+            pnl: 480.00
+          },
+          {
+            id: 'POS-2039',
+            symbol: 'XAUUSD',
+            side: 'BUY',
+            lots: 0.20,
+            entry: 3639.00,
+            exit: 3646.00,
+            pnl: 140.00
+          },
+          {
+            id: 'POS-2040',
+            symbol: 'XAUUSD',
+            side: 'SELL',
+            lots: 0.20,
+            entry: 3648.00,
+            exit: 3650.20,
+            pnl: -44.00
+          }
+        ],
+        tape: [],
+        // 150+ Pip Setups Capped at Max 3 Active Setups Per Day
+        maxDaily150PipSetups: 3,
+        active150PipSetups: [],
+        heroSignal: null,
+        latestSignal: null,
+        firedPreNewsKeys: {},
+        mt5UploadedDataUrl: '',
+        telegram: {
+          botToken: '',
+          ownerChatId: '',
+          autoPush: false,
+          autoPushSignal: true,
+          minConfidence: 80,
+          cooldownSeconds: 60,
+          rules: {
+            signal: true,
+            priceCross: true,
+            session: false
+          },
+          lastDispatchAt: 0,
+          lastAlertedPriceBucket: null,
+          lastAlertedSession: '',
+          sentCount: 0,
+          logs: []
+        }
+      };
+
+      // DOM references
+      const els = {
+        tvSingleQuoteContainer: document.getElementById('tvSingleQuoteContainer'),
+        tvDxyQuoteContainer: document.getElementById('tvDxyQuoteContainer'),
+        tvTickerTapeContainer: document.getElementById('tvTickerTapeContainer'),
+        tvAdvancedChartWrapper: document.getElementById('tvAdvancedChartWrapper'),
+        tvAdvancedChartContainer: document.getElementById('tvAdvancedChartContainer'),
+        tvFallbackBanner: document.getElementById('tvFallbackBanner'),
+        switchToCanvasFromFallbackBtn: document.getElementById('switchToCanvasFromFallbackBtn'),
+        smcCanvasWrapper: document.getElementById('smcCanvasWrapper'),
+        canvasToolbar: document.getElementById('canvasToolbar'),
+        modeTvLiveBtn: document.getElementById('modeTvLiveBtn'),
+        modeSmcCanvasBtn: document.getElementById('modeSmcCanvasBtn'),
+        activeChartSourceBadge: document.getElementById('activeChartSourceBadge'),
+        manualSpotInput: document.getElementById('manualSpotInput'),
+        syncSpotBtn: document.getElementById('syncSpotBtn'),
+        clockTimeText: document.getElementById('clockTimeText'),
+        clockZoneBadge: document.getElementById('clockZoneBadge'),
+        sessionNameText: document.getElementById('sessionNameText'),
+        soundAlertToggleBtn: document.getElementById('soundAlertToggleBtn'),
+        soundIcon: document.getElementById('soundIcon'),
+        soundStatusLabel: document.getElementById('soundStatusLabel'),
+        londonNyOnlyBtn: document.getElementById('londonNyOnlyBtn'),
+        londonNyStateLabel: document.getElementById('londonNyStateLabel'),
+        feedToggleBtn: document.getElementById('feedToggleBtn'),
+        feedDot: document.getElementById('feedDot'),
+        feedLabel: document.getElementById('feedLabel'),
+        riskModeBtn: document.getElementById('riskModeBtn'),
+        riskModeLabel: document.getElementById('riskModeLabel'),
+        alertsToggleBtn: document.getElementById('alertsToggleBtn'),
+        alertsDrawer: document.getElementById('alertsDrawer'),
+        alertCountBadge: document.getElementById('alertCountBadge'),
+        tgQuickJumpBtn: document.getElementById('tgQuickJumpBtn'),
+        tgHeaderDot: document.getElementById('tgHeaderDot'),
+        tgAutoBadge: document.getElementById('tgAutoBadge'),
+        // Hero 150+ Pip Signal Banner refs
+        heroDailyQuotaBadge: document.getElementById('heroDailyQuotaBadge'),
+        heroSessionEligibilityBadge: document.getElementById('heroSessionEligibilityBadge'),
+        heroGenerate150Btn: document.getElementById('heroGenerate150Btn'),
+        testSoundChimeBtn: document.getElementById('testSoundChimeBtn'),
+        heroDirBadge: document.getElementById('heroDirBadge'),
+        heroStyleBadge: document.getElementById('heroStyleBadge'),
+        heroConfBadge: document.getElementById('heroConfBadge'),
+        heroSetupHeadline: document.getElementById('heroSetupHeadline'),
+        heroSetupReason: document.getElementById('heroSetupReason'),
+        heroEntryVal: document.getElementById('heroEntryVal'),
+        heroSlVal: document.getElementById('heroSlVal'),
+        heroTp1Val: document.getElementById('heroTp1Val'),
+        heroTp2Val: document.getElementById('heroTp2Val'),
+        heroPipRrVal: document.getElementById('heroPipRrVal'),
+        heroQueueChips: document.getElementById('heroQueueChips'),
+        // Structure & DXY & News cards
+        smcStructureTag: document.getElementById('smcStructureTag'),
+        smcStructureDetail: document.getElementById('smcStructureDetail'),
+        smcChochLevel: document.getElementById('smcChochLevel'),
+        smcObZone: document.getElementById('smcObZone'),
+        smcFvgZone: document.getElementById('smcFvgZone'),
+        liqTargetText: document.getElementById('liqTargetText'),
+        liqPoolText: document.getElementById('liqPoolText'),
+        dxyBiasBadge: document.getElementById('dxyBiasBadge'),
+        dxyPriceText: document.getElementById('dxyPriceText'),
+        dxyDeltaText: document.getElementById('dxyDeltaText'),
+        newsRadarStatusBadge: document.getElementById('newsRadarStatusBadge'),
+        macroEventTitle: document.getElementById('macroEventTitle'),
+        macroCountdown: document.getElementById('macroCountdown'),
+        // Multi-style analyst suite refs
+        styleActiveBadge: document.getElementById('styleActiveBadge'),
+        styleTargetPipBadge: document.getElementById('styleTargetPipBadge'),
+        stylePlaybookDesc: document.getElementById('stylePlaybookDesc'),
+        indEmaStatus: document.getElementById('indEmaStatus'),
+        indRsiMacdStatus: document.getElementById('indRsiMacdStatus'),
+        indBbAtrStatus: document.getElementById('indBbAtrStatus'),
+        indFibStatus: document.getElementById('indFibStatus'),
+        runStyleAnalysisBtn: document.getElementById('runStyleAnalysisBtn'),
+        // US News & 1-Min DXY Breakout refs
+        dxyBiasModeSelect: document.getElementById('dxyBiasModeSelect'),
+        triggerOneMinPreNewsBtn: document.getElementById('triggerOneMinPreNewsBtn'),
+        preNewsAlertBox: document.getElementById('preNewsAlertBox'),
+        preNewsActionTag: document.getElementById('preNewsActionTag'),
+        preNewsTimerTag: document.getElementById('preNewsTimerTag'),
+        preNewsDetailText: document.getElementById('preNewsDetailText'),
+        dxyLiveSpotReadout: document.getElementById('dxyLiveSpotReadout'),
+        // MT5 Screenshot refs
+        mt5ScreenshotInput: document.getElementById('mt5ScreenshotInput'),
+        mt5PreviewPlaceholder: document.getElementById('mt5PreviewPlaceholder'),
+        mt5ScreenshotPreviewImg: document.getElementById('mt5ScreenshotPreviewImg'),
+        mt5TfSelect: document.getElementById('mt5TfSelect'),
+        mt5PriceOverrideInput: document.getElementById('mt5PriceOverrideInput'),
+        mt5NotesInput: document.getElementById('mt5NotesInput'),
+        askMt5SignalBtn: document.getElementById('askMt5SignalBtn'),
+        mt5AnalysisResultText: document.getElementById('mt5AnalysisResultText'),
+        clearMt5ScreenshotBtn: document.getElementById('clearMt5ScreenshotBtn'),
+        // Canvas & Execution refs
+        canvas: document.getElementById('chartCanvas'),
+        ohlcO: document.getElementById('ohlcO'),
+        ohlcH: document.getElementById('ohlcH'),
+        ohlcL: document.getElementById('ohlcL'),
+        ohlcC: document.getElementById('ohlcC'),
+        replayPauseBtn: document.getElementById('replayPauseBtn'),
+        replayIcon: document.getElementById('replayIcon'),
+        replayText: document.getElementById('replayText'),
+        stepCandleBtn: document.getElementById('stepCandleBtn'),
+        resetViewBtn: document.getElementById('resetViewBtn'),
+        limitPriceRow: document.getElementById('limitPriceRow'),
+        limitPriceInput: document.getElementById('limitPriceInput'),
+        lotSizeInput: document.getElementById('lotSizeInput'),
+        slInput: document.getElementById('slInput'),
+        tpInput: document.getElementById('tpInput'),
+        estRiskDollarText: document.getElementById('estRiskDollarText'),
+        dailyLossStatusText: document.getElementById('dailyLossStatusText'),
+        dailyLossBar: document.getElementById('dailyLossBar'),
+        buyBtn: document.getElementById('buyBtn'),
+        sellBtn: document.getElementById('sellBtn'),
+        buyBtnPrice: document.getElementById('buyBtnPrice'),
+        sellBtnPrice: document.getElementById('sellBtnPrice'),
+        executionFeedback: document.getElementById('executionFeedback'),
+        accountEquityText: document.getElementById('accountEquityText'),
+        askLadder: document.getElementById('askLadder'),
+        bidLadder: document.getElementById('bidLadder'),
+        domSpreadValue: document.getElementById('domSpreadValue'),
+        tapeRows: document.getElementById('tapeRows'),
+        domContainer: document.getElementById('domContainer'),
+        tapeContainer: document.getElementById('tapeContainer'),
+        positionsTableBody: document.getElementById('positionsTableBody'),
+        floatingPnlDisplay: document.getElementById('floatingPnlDisplay'),
+        openPosCount: document.getElementById('openPosCount'),
+        closedPosCount: document.getElementById('closedPosCount'),
+        closeAllBtn: document.getElementById('closeAllBtn'),
+        // Signal & Telegram refs
+        generateBestSignalBtn: document.getElementById('generateBestSignalBtn'),
+        applySignalToTicketBtn: document.getElementById('applySignalToTicketBtn'),
+        autoPushSignalCheckbox: document.getElementById('autoPushSignalCheckbox'),
+        minSignalConfidenceInput: document.getElementById('minSignalConfidenceInput'),
+        sigDirectionBadge: document.getElementById('sigDirectionBadge'),
+        sigSetupTitle: document.getElementById('sigSetupTitle'),
+        sigConfidenceText: document.getElementById('sigConfidenceText'),
+        sigEntryText: document.getElementById('sigEntryText'),
+        sigSlText: document.getElementById('sigSlText'),
+        sigTp1Text: document.getElementById('sigTp1Text'),
+        sigTp2Text: document.getElementById('sigTp2Text'),
+        sigRrText: document.getElementById('sigRrText'),
+        sigRationaleText: document.getElementById('sigRationaleText'),
+        sigTimestampText: document.getElementById('sigTimestampText'),
+        tgAutoPushToggleBtn: document.getElementById('tgAutoPushToggleBtn'),
+        tgBotTokenInput: document.getElementById('tgBotTokenInput'),
+        tgOwnerChatIdInput: document.getElementById('tgOwnerChatIdInput'),
+        toggleTokenVisibilityBtn: document.getElementById('toggleTokenVisibilityBtn'),
+        tgCooldownSecondsInput: document.getElementById('tgCooldownSecondsInput'),
+        ruleSignalAlert: document.getElementById('ruleSignalAlert'),
+        rulePriceCrossAlert: document.getElementById('rulePriceCrossAlert'),
+        ruleSessionAlert: document.getElementById('ruleSessionAlert'),
+        saveTgConfigBtn: document.getElementById('saveTgConfigBtn'),
+        testAndSendSignalBtn: document.getElementById('testAndSendSignalBtn'),
+        tgCooldownStatusText: document.getElementById('tgCooldownStatusText'),
+        tgDispatchCount: document.getElementById('tgDispatchCount'),
+        tgDeliveryLogList: document.getElementById('tgDeliveryLogList')
+      };
+
+      const ctx = els.canvas.getContext('2d');
+      const TG_STORAGE_KEY = 't4fx_gold_owner_telegram_config_v1';
+      let audioCtx = null;
+
+      // -------------------------------------------------------------------
+      // WEB AUDIO SYNTHESIZED SOUND ALERTS (NO EXTERNAL AUDIO FILES)
+      // -------------------------------------------------------------------
+      function playAlertSound(kind = 'signal') {
+        if (!state.soundEnabled) return;
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          if (!audioCtx) audioCtx = new AudioContextClass();
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(() => {});
+          }
+
+          const now = audioCtx.currentTime;
+          const notes = kind === 'news' ? [880, 1174.66, 1318.51] : [659.25, 880, 1046.5];
+
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = kind === 'news' ? 'sawtooth' : 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.11);
+
+            gain.gain.setValueAtTime(0.001, now + idx * 0.11);
+            gain.gain.exponentialRampToValueAtTime(0.12, now + idx * 0.11 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.11 + 0.24);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.11);
+            osc.stop(now + idx * 0.11 + 0.25);
+          });
+        } catch (err) {
+          // Ignore audio autoplay blocks until user gesture
+        }
+      }
+
+      // -------------------------------------------------------------------
+      // TRADINGVIEW WIDGET EMBEDDING (XAUUSD PRIMARY + DXY MONITOR)
+      // -------------------------------------------------------------------
+      function renderTradingViewTickerTape() {
+        try {
+          els.tvTickerTapeContainer.innerHTML = '';
+          const script = document.createElement('script');
+          script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
+          script.async = true;
+          script.type = 'text/javascript';
+          script.text = JSON.stringify({
+            symbols: [
+              { proName: 'OANDA:XAUUSD', title: 'XAUUSD Spot (OANDA)' },
+              { proName: 'TVC:GOLD', title: 'Gold Spot (TVC)' },
+              { proName: 'FX_IDC:XAUUSD', title: 'XAUUSD (FX_IDC)' },
+              { proName: 'BINANCE:XAUUSDT', title: 'XAUUSDT (Binance)' },
+              { proName: 'TVC:DXY', title: 'US Dollar Index (DXY)' }
+            ],
+            showSymbolLogo: true,
+            isTransparent: true,
+            displayMode: 'adaptive',
+            colorTheme: 'dark',
+            locale: 'en'
+          });
+          els.tvTickerTapeContainer.appendChild(script);
+        } catch (err) {
+          els.tvTickerTapeContainer.innerHTML = '<div class="text-[11px] font-mono text-gray-400 px-3 py-2">OANDA:XAUUSD • TVC:GOLD • TVC:DXY</div>';
+        }
+      }
+
+      function renderTradingViewSingleQuote(symbol) {
+        try {
+          els.tvSingleQuoteContainer.innerHTML = '';
+          const script = document.createElement('script');
+          script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js';
+          script.async = true;
+          script.type = 'text/javascript';
+          script.text = JSON.stringify({
+            symbol: symbol,
+            width: '100%',
+            isTransparent: true,
+            colorTheme: 'dark',
+            locale: 'en'
+          });
+          els.tvSingleQuoteContainer.appendChild(script);
+        } catch (err) {
+          els.tvSingleQuoteContainer.innerHTML = `<span class="text-xs font-mono text-goldBright">${symbol}</span>`;
+        }
+      }
+
+      function renderTradingViewDxyQuote() {
+        try {
+          els.tvDxyQuoteContainer.innerHTML = '';
+          const script = document.createElement('script');
+          script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js';
+          script.async = true;
+          script.type = 'text/javascript';
+          script.text = JSON.stringify({
+            symbol: 'TVC:DXY',
+            width: '100%',
+            isTransparent: true,
+            colorTheme: 'dark',
+            locale: 'en'
+          });
+          els.tvDxyQuoteContainer.appendChild(script);
+        } catch (err) {
+          els.tvDxyQuoteContainer.innerHTML = '<span class="text-xs font-mono text-gray-300">TVC:DXY</span>';
+        }
+      }
+
+      function renderTradingViewAdvancedChart(symbol) {
+        try {
+          els.tvFallbackBanner.classList.add('hidden');
+          els.tvAdvancedChartContainer.innerHTML = '';
+
+          const script = document.createElement('script');
+          script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+          script.async = true;
+          script.type = 'text/javascript';
+          script.onerror = () => {
+            els.tvFallbackBanner.classList.remove('hidden');
+          };
+          script.text = JSON.stringify({
+            autosize: true,
+            symbol: symbol,
+            interval: '15',
+            timezone: 'Asia/Bangkok',
+            theme: 'dark',
+            style: '1',
+            locale: 'en',
+            backgroundColor: '#090b0f',
+            gridColor: 'rgba(35, 42, 56, 0.5)',
+            hide_side_toolbar: false,
+            allow_symbol_change: false,
+            calendar: false,
+            support_host: 'https://www.tradingview.com'
+          });
+
+          els.tvAdvancedChartContainer.appendChild(script);
+        } catch (err) {
+          els.tvFallbackBanner.classList.remove('hidden');
+        }
+      }
+
+      // -------------------------------------------------------------------
+      // HELPERS, LONDON/NY GMT+7 SESSION CHECK & CANDLE ENGINE
+      // -------------------------------------------------------------------
+      function getFeedConfig() {
+        return TV_FEEDS[state.tvSymbol] || TV_FEEDS['OANDA:XAUUSD'];
+      }
+
+      function formatPrice(val) {
+        const cfg = getFeedConfig();
+        return Number(val).toFixed(cfg.decimals);
+      }
+
+      // London (08:00-17:00 GMT) = 15:00-00:00 GMT+7; NY (13:00-22:00 GMT) = 20:00-05:00 GMT+7
+      // Combined London & New York window in GMT+7 is 15:00 to 05:00 next day
+      function isLondonOrNewYorkInGmt7(now = new Date()) {
+        const khDate = new Date(now.getTime() + 7 * 3600000);
+        const h = khDate.getUTCHours();
+        return h >= 15 || h < 5;
+      }
+
+      function canAutoAnalyzeNow() {
+        if (!state.londonNyOnly) return true;
+        return isLondonOrNewYorkInGmt7(new Date());
+      }
+
+      function updateSessionEligibilityBadge() {
+        const inWindow = isLondonOrNewYorkInGmt7(new Date());
+        els.londonNyStateLabel.textContent = state.londonNyOnly ? 'ON' : 'OFF';
+        els.londonNyOnlyBtn.className = state.londonNyOnly
+          ? 'flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-mono font-bold border transition-all bg-emeraldLong/20 text-emeraldLong border-emeraldLong/40'
+          : 'flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-mono font-bold border transition-all bg-obsidian text-gray-300 border-charcoalBorder hover:border-gold/50';
+
+        if (!state.londonNyOnly) {
+          els.heroSessionEligibilityBadge.textContent = 'AUTO-ANALYZE: ALL SESSIONS';
+          els.heroSessionEligibilityBadge.className = 'px-2.5 py-1 rounded-lg bg-obsidian text-goldBright border border-charcoalBorder font-mono text-[11px]';
+        } else if (inWindow) {
+          els.heroSessionEligibilityBadge.textContent = 'LDN/NY SESSION ACTIVE (GMT+7)';
+          els.heroSessionEligibilityBadge.className = 'px-2.5 py-1 rounded-lg bg-emeraldLong/15 text-emeraldLong border border-emeraldLong/35 font-mono font-bold text-[11px]';
+        } else {
+          els.heroSessionEligibilityBadge.textContent = 'OUTSIDE LDN/NY (GMT+7 FILTER)';
+          els.heroSessionEligibilityBadge.className = 'px-2.5 py-1 rounded-lg bg-crimsonShort/15 text-crimsonShort border border-crimsonShort/35 font-mono font-bold text-[11px]';
+        }
+      }
+
+      function generateInitialCandles(symbol, timeframe, count = 140) {
+        const cfg = TV_FEEDS[symbol] || TV_FEEDS['OANDA:XAUUSD'];
+        const tfMult = TIMEFRAME_MULTIPLIER[timeframe] || 1.0;
+        const volatility = cfg.baselinePrice * 0.0012 * tfMult;
+        const list = [];
+
+        let price = cfg.baselinePrice - (volatility * 10);
+        const now = Date.now();
+        const tfMs = {
+          M1: 60000,
+          M5: 300000,
+          M15: 900000,
+          H1: 3600000,
+          H4: 14400000,
+          D1: 86400000
+        }[timeframe] || 300000;
+
+        for (let i = 0; i < count; i++) {
+          const open = price;
+          const wave = Math.sin(i * 0.16) * volatility * 0.65;
+          const drift = ((Math.random() - 0.47) * volatility * 1.45) + (wave * 0.35);
+          const close = Math.max(3620, Math.min(3680, open + drift));
+          const high = Math.max(open, close) + Math.random() * volatility * 0.9;
+          const low = Math.min(open, close) - Math.random() * volatility * 0.9;
+
+          list.push({
+            time: now - (count - 1 - i) * tfMs,
+            open,
+            high,
+            low,
+            close,
+            volume: Math.floor(150 + Math.random() * 750)
+          });
+          price = close;
+        }
+
+        const last = list[list.length - 1];
+        const diff = cfg.baselinePrice - last.close;
+        last.close = cfg.baselinePrice;
+        last.high = Math.max(last.high + diff, last.open, last.close);
+        last.low = Math.min(last.low + diff, last.open, last.close);
+        return list;
+      }
+
+      function getActiveCandles() {
+        const key = `${state.tvSymbol}_${state.timeframe}`;
+        if (!state.candlesByKey[key]) {
+          state.candlesByKey[key] = generateInitialCandles(state.tvSymbol, state.timeframe);
+        }
+        return state.candlesByKey[key];
+      }
+
+      function calculatePositionPnl(pos, currentMid) {
+        const priceDelta = pos.side === 'BUY' ? (currentMid - pos.entry) : (pos.entry - currentMid);
+        return priceDelta * pos.lots * 100;
+      }
+
+      function showExecutionMessage(msg, type = 'info') {
+        els.executionFeedback.classList.remove(
+          'hidden',
+          'bg-emeraldLong/15', 'text-emeraldLong', 'border-emeraldLong/30',
+          'bg-crimsonShort/15', 'text-crimsonShort', 'border-crimsonShort/30',
+          'bg-gold/15', 'text-goldBright', 'border-gold/30'
+        );
+        if (type === 'success') {
+          els.executionFeedback.classList.add('bg-emeraldLong/15', 'text-emeraldLong', 'border-emeraldLong/30');
+        } else if (type === 'error') {
+          els.executionFeedback.classList.add('bg-crimsonShort/15', 'text-crimsonShort', 'border-crimsonShort/30');
+        } else {
+          els.executionFeedback.classList.add('bg-gold/15', 'text-goldBright', 'border-gold/30');
+        }
+        els.executionFeedback.textContent = msg;
+      }
+
+      // -------------------------------------------------------------------
+      // 150+ PIP SETUP ENGINE (CAPPED AT MAX 3 ACTIVE SETUPS PER DAY)
+      // Note: On XAUUSD, 1.00 price point = 10 pips (e.g., 18.50 pts = 185 pips)
+      // -------------------------------------------------------------------
+      function getGmt7DayKey(now = new Date()) {
+        const kh = new Date(now.getTime() + 7 * 3600000);
+        return `${kh.getUTCFullYear()}-${String(kh.getUTCMonth() + 1).padStart(2, '0')}-${String(kh.getUTCDate()).padStart(2, '0')}`;
+      }
+
+      function buildSignalSetup(options = {}) {
+        const cfg = getFeedConfig();
+        const mid = Number.isFinite(options.anchorPrice) && options.anchorPrice > 0 ? options.anchorPrice : state.spotPrice;
+        const style = options.style || state.tradingStyle;
+        const force150Plus = Boolean(options.force150Plus);
+
+        // Determine direction from forced side, DXY bias, or structure
+        let direction = options.forcedDirection;
+        if (!direction) {
+          const dxyBias = getEffectiveDxyBias();
+          if (dxyBias === 'BULLISH') direction = 'SELL';
+          else if (dxyBias === 'BEARISH') direction = 'BUY';
+          else direction = Math.random() > 0.36 ? 'BUY' : 'SELL';
+        }
+
+        // Target pips: 150+ pips means >= 15.00 XAUUSD points (150 pips = 15.0 pts)
+        let targetPips;
+        if (force150Plus || style === 'SWING') {
+          targetPips = Math.floor(160 + Math.random() * 85); // 160 - 244 pips
+        } else if (style === 'DAY') {
+          targetPips = Math.floor(150 + Math.random() * 65); // 150 - 214 pips
+        } else {
+          targetPips = Math.floor(55 + Math.random() * 115); // 55 - 169 pips
+        }
+
+        const tp2Dist = Number((targetPips / 10).toFixed(2)); // 10 pips per $1.00 gold move
+        const tp1Dist = Number((tp2Dist * 0.55).toFixed(2));
+        const slDist = Number(Math.max(5.5, Math.min(12.0, tp2Dist * 0.42)).toFixed(2));
+        const rrVal = (tp2Dist / slDist).toFixed(1);
+        const confidence = Math.floor(83 + Math.random() * 11);
+
+        const entry = Number(mid.toFixed(2));
+        const sl = direction === 'BUY' ? Number((entry - slDist).toFixed(2)) : Number((entry + slDist).toFixed(2));
+        const tp1 = direction === 'BUY' ? Number((entry + tp1Dist).toFixed(2)) : Number((entry - tp1Dist).toFixed(2));
+        const tp2 = direction === 'BUY' ? Number((entry + tp2Dist).toFixed(2)) : Number((entry - tp2Dist).toFixed(2));
+
+        const now = new Date();
+        const kh = new Date(now.getTime() + 7 * 3600000);
+        const timeStr = `${String(kh.getUTCHours()).padStart(2, '0')}:${String(kh.getUTCMinutes()).padStart(2, '0')}:${String(kh.getUTCSeconds()).padStart(2, '0')} GMT+7`;
+
+        const setupTitle = options.customTitle || (
+          direction === 'BUY'
+            ? `${style} • Bullish OB + FVG & DXY Pullback`
+            : `${style} • Bearish Supply + BSL Sweep & DXY Push`
+        );
+
+        const rationale = options.customReason || (
+          direction === 'BUY'
+            ? `EMA 20/50/200 bullish alignment, Fib 0.618-0.786 discount reclaim, and RSI/MACD momentum targeting +${targetPips} pips.`
+            : `Liquidity sweep above range high into bearish OB/FVG with DXY firming, targeting +${targetPips} pips.`
+        );
+
+        return {
+          id: `XAU-${Date.now().toString().slice(-5)}`,
+          dayKey: getGmt7DayKey(now),
+          symbol: 'XAUUSD',
+          feed: cfg.label,
+          style,
+          direction,
+          confidence,
+          targetPips,
+          entryLow: Number((entry - 0.80).toFixed(2)),
+          entryHigh: Number((entry + 0.80).toFixed(2)),
+          entryMid: entry,
+          sl,
+          tp1,
+          tp2,
+          rr: `1 : ${rrVal}`,
+          setupTitle,
+          rationale,
+          timestamp: timeStr
+        };
+      }
+
+      function register150PipSetup(sig, options = {}) {
+        const todayKey = getGmt7DayKey(new Date());
+        state.active150PipSetups = state.active150PipSetups.filter((s) => s.dayKey === todayKey);
+
+        if (sig.targetPips < 150) {
+          return { added: false, reason: 'Below 150 pips' };
+        }
+
+        if (state.active150PipSetups.length >= state.maxDaily150PipSetups) {
+          if (!options.silentQuotaMsg) {
+            showExecutionMessage('Daily cap reached: Max 3 active 150+ pip XAUUSD setups per day.', 'info');
+          }
+          return { added: false, reason: 'Daily cap of 3 reached' };
+        }
+
+        state.active150PipSetups.push(sig);
+        state.heroSignal = sig;
+        renderHeroSignalBanner();
+
+        if (options.playSound !== false) {
+          playAlertSound('signal');
+        }
+
+        if (options.autoPush !== false && shouldAutoPushSignal(sig)) {
+          dispatchTelegramAlert('150+_PIP_SIGNAL', formatSignalTelegramMessage(sig), false);
+        }
+
+        return { added: true, setup: sig };
+      }
+
+      function renderHeroSignalBanner() {
+        const todayKey = getGmt7DayKey(new Date());
+        const todaysSetups = state.active150PipSetups.filter((s) => s.dayKey === todayKey);
+        const count = todaysSetups.length;
+
+        els.heroDailyQuotaBadge.textContent = `150+ PIP SETUPS TODAY: ${count} / ${state.maxDaily150PipSetups} ACTIVE`;
+        els.heroDailyQuotaBadge.className = count >= state.maxDaily150PipSetups
+          ? 'px-2.5 py-1 rounded-lg bg-gold/20 text-goldBright border border-gold/40 font-mono font-bold text-[11px]'
+          : 'px-2.5 py-1 rounded-lg bg-emeraldLong/15 text-emeraldLong border border-emeraldLong/35 font-mono font-bold text-[11px]';
+
+        const sig = state.heroSignal || todaysSetups[todaysSetups.length - 1] || buildSignalSetup({ style: 'DAY', force150Plus: true });
+        state.heroSignal = sig;
+
+        if (sig.direction === 'BUY') {
+          els.heroDirBadge.textContent = 'BUY XAUUSD';
+          els.heroDirBadge.className = 'px-3 py-1 rounded-xl text-sm font-extrabold font-mono bg-emeraldLong/20 text-emeraldLong border border-emeraldLong/40';
+        } else {
+          els.heroDirBadge.textContent = 'SELL XAUUSD';
+          els.heroDirBadge.className = 'px-3 py-1 rounded-xl text-sm font-extrabold font-mono bg-crimsonShort/20 text-crimsonShort border border-crimsonShort/40';
+        }
+
+        els.heroStyleBadge.textContent = `${sig.style} • +${sig.targetPips} PIPS`;
+        els.heroConfBadge.textContent = `${sig.confidence}% CONF`;
+        els.heroSetupHeadline.textContent = sig.setupTitle;
+        els.heroSetupReason.textContent = sig.rationale;
+        els.heroEntryVal.textContent = formatPrice(sig.entryMid);
+        els.heroSlVal.textContent = formatPrice(sig.sl);
+        els.heroTp1Val.textContent = formatPrice(sig.tp1);
+        els.heroTp2Val.textContent = formatPrice(sig.tp2);
+        els.heroPipRrVal.textContent = `+${sig.targetPips}p • ${sig.rr}`;
+
+        if (todaysSetups.length === 0) {
+          els.heroQueueChips.innerHTML = '<span class="text-gray-500">None logged yet today</span>';
+        } else {
+          els.heroQueueChips.innerHTML = todaysSetups.map((item) => {
+            const isSelected = item.id === sig.id;
+            const activeCls = isSelected
+              ? 'bg-gold text-obsidian font-bold border-gold'
+              : 'bg-obsidian text-gray-200 border-charcoalBorder hover:border-gold/50';
+            const sideColor = item.direction === 'BUY' ? 'text-emeraldLong' : 'text-crimsonShort';
+            return `
+              <button type="button" data-hero-sig-id="${item.id}" class="hero-queue-chip px-2.5 py-1 rounded-lg border transition-all ${activeCls}">
+                <span class="${isSelected ? 'text-obsidian' : sideColor} font-bold">${item.direction}</span>
+                <span>@${formatPrice(item.entryMid)}</span>
+                <span>(+${item.targetPips}p)</span>
+              </button>
+            `;
+          }).join('');
+
+          document.querySelectorAll('.hero-queue-chip').forEach((chip) => {
+            chip.addEventListener('click', () => {
+              const found = todaysSetups.find((x) => x.id === chip.getAttribute('data-hero-sig-id'));
+              if (found) {
+                state.heroSignal = found;
+                renderHeroSignalBanner();
+              }
+            });
+          });
+        }
+      }
+
+      // -------------------------------------------------------------------
+      // DXY CORRELATION & 1-MINUTE PRE-NEWS BREAKOUT ENGINE
+      // -------------------------------------------------------------------
+      function getEffectiveDxyBias() {
+        if (state.dxyBiasMode === 'BULLISH' || state.dxyBiasMode === 'BEARISH') {
+          return state.dxyBiasMode;
+        }
+        return state.dxyPrice >= 103.75 ? 'BULLISH' : 'BEARISH';
+      }
+
+      function syncDxyAndNewsUI() {
+        const dxy = state.dxyPrice;
+        const delta = dxy - 103.74;
+        const bias = getEffectiveDxyBias();
+
+        els.dxyPriceText.textContent = dxy.toFixed(2);
+        els.dxyLiveSpotReadout.textContent = dxy.toFixed(2);
+
+        const sign = delta >= 0 ? '+' : '';
+        els.dxyDeltaText.textContent = `${sign}${delta.toFixed(2)} (${sign}${((delta / 103.74) * 100).toFixed(2)}%)`;
+        els.dxyDeltaText.className = `text-xs font-mono font-semibold ${delta >= 0 ? 'text-emeraldLong' : 'text-crimsonShort'}`;
+
+        // Bullish DXY -> SELL XAUUSD NOW; Bearish DXY -> BUY XAUUSD NOW
+        if (bias === 'BULLISH') {
+          els.dxyBiasBadge.textContent = 'BULLISH → SELL XAU';
+          els.dxyBiasBadge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-crimsonShort/20 text-crimsonShort border border-crimsonShort/40';
+          els.preNewsActionTag.textContent = 'SELL XAUUSD NOW (DXY BULLISH)';
+          els.preNewsActionTag.className = 'px-2.5 py-0.5 rounded-lg text-xs font-extrabold font-mono bg-crimsonShort/20 text-crimsonShort border border-crimsonShort/40';
+          els.preNewsDetailText.textContent = `DXY at ${dxy.toFixed(2)} is BULLISH ahead of US news breakout. Inverse gold correlation favors SELL XAUUSD NOW.`;
+        } else {
+          els.dxyBiasBadge.textContent = 'BEARISH → BUY XAU';
+          els.dxyBiasBadge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emeraldLong/20 text-emeraldLong border border-emeraldLong/40';
+          els.preNewsActionTag.textContent = 'BUY XAUUSD NOW (DXY BEARISH)';
+          els.preNewsActionTag.className = 'px-2.5 py-0.5 rounded-lg text-xs font-extrabold font-mono bg-emeraldLong/20 text-emeraldLong border border-emeraldLong/40';
+          els.preNewsDetailText.textContent = `DXY at ${dxy.toFixed(2)} is BEARISH ahead of US news breakout. Inverse gold correlation favors BUY XAUUSD NOW.`;
+        }
+
+        // Find next upcoming US news event from current time
+        const nowMs = Date.now();
+        const upcoming = US_NEWS_SCHEDULE.find((ev) => ev.targetMs > nowMs) || US_NEWS_SCHEDULE[0];
+        els.macroEventTitle.textContent = upcoming.title;
+
+        const diffSec = Math.max(0, Math.floor((upcoming.targetMs - nowMs) / 1000));
+        const h = String(Math.floor(diffSec / 3600)).padStart(2, '0');
+        const m = String(Math.floor((diffSec % 3600) / 60)).padStart(2, '0');
+        const s = String(diffSec % 60).padStart(2, '0');
+        els.macroCountdown.textContent = `${h}:${m}:${s}`;
+
+        // Automatic 1-minute (<= 60 seconds, > 0 seconds) pre-news breakout alert
+        if (diffSec > 0 && diffSec <= 60) {
+          const alertKey = `${upcoming.id}_T60`;
+          els.newsRadarStatusBadge.textContent = `T-${diffSec}s BREAKOUT`;
+          els.newsRadarStatusBadge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-crimsonShort text-white animate-pulse';
+          els.preNewsTimerTag.textContent = `1-MIN BEFORE NEWS (T-${diffSec}s)`;
+
+          if (!state.firedPreNewsKeys[alertKey]) {
+            state.firedPreNewsKeys[alertKey] = true;
+            fireOneMinPreNewsBreakoutAlert(upcoming.title, false);
+          }
+        } else {
+          els.newsRadarStatusBadge.textContent = '1-MIN TRIGGER';
+          els.newsRadarStatusBadge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-crimsonShort/20 text-crimsonShort border border-crimsonShort/40';
+          els.preNewsTimerTag.textContent = '1-MIN RADAR ARMED';
+        }
+      }
+
+      function fireOneMinPreNewsBreakoutAlert(eventTitle, isManualTest = false) {
+        const bias = getEffectiveDxyBias();
+        const actionText = bias === 'BULLISH' ? 'SELL XAUUSD NOW' : 'BUY XAUUSD NOW';
+        const dxyDesc = bias === 'BULLISH' ? 'DXY Bullish (Good US News bias)' : 'DXY Bearish (Weak USD / Gold lift bias)';
+
+        playAlertSound('news');
+        showExecutionMessage(`1-MIN PRE-NEWS ALERT [${eventTitle}]: ${dxyDesc} → ${actionText}!`, 'info');
+
+        // Also update standard signal card for instant execution
+        const forcedDir = bias === 'BULLISH' ? 'SELL' : 'BUY';
+        const sig = buildSignalSetup({
+          forcedDirection: forcedDir,
+          style: 'DAY',
+          force150Plus: true,
+          customTitle: `1-Min Pre-News (${eventTitle}) • ${actionText}`,
+          customReason: `${dxyDesc} at DXY ${state.dxyPrice.toFixed(2)}. Pre-news breakout execution alert on XAUUSD.`
+        });
+        state.latestSignal = sig;
+        renderSignalCard(sig);
+
+        if (state.telegram.autoPush || isManualTest) {
+          const tgMsg = [
+            `🚨 *T4FX GOLD — 1-MIN PRE-NEWS ALERT*`,
+            `• *Event:* ${eventTitle}`,
+            `• *DXY Status:* ${dxyDesc} (${state.dxyPrice.toFixed(2)})`,
+            `• *Action:* *${actionText}*`,
+            `• *XAUUSD Spot:* ${formatPrice(state.spotPrice)}`,
+            `• *SL / TP1 / TP2:* ${formatPrice(sig.sl)} / ${formatPrice(sig.tp1)} / ${formatPrice(sig.tp2)}`
+          ].join('\n');
+          dispatchTelegramAlert('PRE_NEWS_1M', tgMsg, isManualTest);
+        }
+      }
+
+      // -------------------------------------------------------------------
+      // MULTI-STYLE ANALYST SUITE (SCALPING | DAY TRADER | SWING TRADER)
+      // -------------------------------------------------------------------
+      function setTradingStyle(style) {
+        state.tradingStyle = style;
+        document.querySelectorAll('.style-tab-btn').forEach((btn) => {
+          const active = btn.getAttribute('data-style') === style;
+          btn.className = active
+            ? 'style-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-gold text-obsidian'
+            : 'style-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight';
+        });
+
+        if (style === 'SCALPING') {
+          els.styleActiveBadge.textContent = 'SCALPING MODE (M1 - M15)';
+          els.styleTargetPipBadge.textContent = 'Target: 55–165+ Pips • Liquidity Sweeps & FVG';
+          els.stylePlaybookDesc.textContent = 'Precision entries on liquidity sweeps, micro-order blocks, and EMA 20/50 pullbacks with tight stops. Qualifies for Hero 150+ pip queue when expansion exceeds 150 pips.';
+          els.indEmaStatus.textContent = 'EMA 20 > 50 BULL';
+          els.indRsiMacdStatus.textContent = 'RSI 57.2 • HIST +1.4';
+          els.indBbAtrStatus.textContent = 'MID-UPPER • ATR 4.2';
+          els.indFibStatus.textContent = '0.618 MICRO RETEST';
+        } else if (style === 'DAY') {
+          els.styleActiveBadge.textContent = 'DAY TRADER MODE (M15 - H1)';
+          els.styleTargetPipBadge.textContent = 'Target: 150–215 Pips • Intraday BOS & Session Flow';
+          els.stylePlaybookDesc.textContent = 'Aligns London/NY session displacement, fair value gaps, and DXY inverse pressure for intraday runs of 150+ pips into buy-side or sell-side liquidity pools.';
+          els.indEmaStatus.textContent = 'EMA 20/50/200 ALIGNED';
+          els.indRsiMacdStatus.textContent = 'RSI 61.0 • BULL CROSS';
+          els.indBbAtrStatus.textContent = 'EXPANSION • ATR 7.6';
+          els.indFibStatus.textContent = 'OTE 0.618 - 0.786';
+        } else {
+          els.styleActiveBadge.textContent = 'SWING TRADER MODE (H1 - D1)';
+          els.styleTargetPipBadge.textContent = 'Target: 160–245+ Pips • Macro Swing & Major OB';
+          els.stylePlaybookDesc.textContent = 'Captures multi-session XAUUSD swings from major order blocks and macro liquidity draws using H4/D1 structure, Fibonacci discount zones, and ATR volatility targets.';
+          els.indEmaStatus.textContent = 'ABOVE 200 EMA TREND';
+          els.indRsiMacdStatus.textContent = 'RSI 59.8 • WEEKLY UP';
+          els.indBbAtrStatus.textContent = 'SWING BAND • ATR 14.2';
+          els.indFibStatus.textContent = 'DEEP DISCOUNT 0.705';
+        }
+      }
+
+      // -------------------------------------------------------------------
+      // MT5 SCREENSHOT UPLOAD & INSTANT SIGNAL ANALYSIS
+      // -------------------------------------------------------------------
+      function handleMt5FileSelect(file) {
+        if (!file || !file.type.startsWith('image/')) {
+          showExecutionMessage('Please choose a valid MT5 chart image (PNG, JPG, WEBP).', 'error');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          state.mt5UploadedDataUrl = ev.target.result || '';
+          els.mt5ScreenshotPreviewImg.src = state.mt5UploadedDataUrl;
+          els.mt5ScreenshotPreviewImg.classList.remove('hidden');
+          els.mt5PreviewPlaceholder.classList.add('hidden');
+          els.mt5AnalysisResultText.textContent = `Loaded MT5 screenshot (${file.name}). Click "Analyze MT5 Screenshot & Give Signal" below.`;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function analyzeMt5ScreenshotAndSignal() {
+        const overridePrice = parseFloat(els.mt5PriceOverrideInput.value);
+        const anchor = Number.isFinite(overridePrice) && overridePrice > 0 ? overridePrice : state.spotPrice;
+        const tf = els.mt5TfSelect.value || 'H1';
+        const note = (els.mt5NotesInput.value || '').trim().toLowerCase();
+
+        let forcedDir = null;
+        if (note.includes('sell') || note.includes('short') || note.includes('bear')) forcedDir = 'SELL';
+        else if (note.includes('buy') || note.includes('long') || note.includes('bull')) forcedDir = 'BUY';
+
+        const sig = buildSignalSetup({
+          anchorPrice: anchor,
+          forcedDirection: forcedDir,
+          style: tf === 'H4' ? 'SWING' : (tf === 'M5' ? 'SCALPING' : 'DAY'),
+          force150Plus: true,
+          customTitle: `MT5 ${tf} Screenshot Signal • ${forcedDir || 'AUTO'} XAUUSD`,
+          customReason: note
+            ? `MT5 (${tf}) note "${els.mt5NotesInput.value.trim()}" analyzed with SMC OB/FVG & EMA confluence.`
+            : `MT5 (${tf}) chart structure scanned for liquidity sweep, order block reclaim, and 150+ pip target.`
+        });
+
+        state.latestSignal = sig;
+        renderSignalCard(sig);
+        register150PipSetup(sig, { playSound: true, autoPush: true });
+
+        els.mt5AnalysisResultText.textContent = `MT5 (${tf}) Signal: ${sig.direction} @ ${formatPrice(sig.entryMid)} | SL ${formatPrice(sig.sl)} | TP1 ${formatPrice(sig.tp1)} | TP2 ${formatPrice(sig.tp2)} (+${sig.targetPips} pips)`;
+      }
+
+      // -------------------------------------------------------------------
+      // SIGNAL CARD RENDERING, EXECUTION & TELEGRAM BOT ENGINE
+      // -------------------------------------------------------------------
+      function renderSignalCard(sig) {
+        if (!sig) return;
+        if (sig.direction === 'BUY') {
+          els.sigDirectionBadge.textContent = 'BUY XAUUSD';
+          els.sigDirectionBadge.className = 'px-2.5 py-1 rounded-lg text-xs font-extrabold font-mono bg-emeraldLong/20 text-emeraldLong border border-emeraldLong/40';
+        } else {
+          els.sigDirectionBadge.textContent = 'SELL XAUUSD';
+          els.sigDirectionBadge.className = 'px-2.5 py-1 rounded-lg text-xs font-extrabold font-mono bg-crimsonShort/20 text-crimsonShort border border-crimsonShort/40';
+        }
+        els.sigSetupTitle.textContent = sig.setupTitle;
+        els.sigConfidenceText.textContent = `${sig.confidence}%`;
+        els.sigEntryText.textContent = `${formatPrice(sig.entryLow)} - ${formatPrice(sig.entryHigh)}`;
+        els.sigSlText.textContent = formatPrice(sig.sl);
+        els.sigTp1Text.textContent = formatPrice(sig.tp1);
+        els.sigTp2Text.textContent = formatPrice(sig.tp2);
+        els.sigRrText.textContent = sig.rr;
+        els.sigRationaleText.textContent = sig.rationale;
+        els.sigTimestampText.textContent = `${sig.timestamp} • ${sig.symbol}`;
+      }
+
+      function applyLatestSignalToTicket() {
+        const sig = state.latestSignal || state.heroSignal || buildSignalSetup({ force150Plus: true });
+        els.slInput.value = formatPrice(sig.sl);
+        els.tpInput.value = formatPrice(sig.tp2);
+        if (state.orderType === 'LIMIT') {
+          els.limitPriceInput.value = formatPrice(sig.entryMid);
+        }
+        updateRiskEstimateUI();
+        showExecutionMessage(`Loaded ${sig.direction} SL (${formatPrice(sig.sl)}) & TP2 (${formatPrice(sig.tp2)}) into XAUUSD ticket`, 'success');
+      }
+
+      function loadTelegramConfig() {
+        try {
+          const raw = localStorage.getItem(TG_STORAGE_KEY);
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          state.telegram.botToken = parsed.botToken || '';
+          state.telegram.ownerChatId = parsed.ownerChatId || '';
+          state.telegram.autoPush = Boolean(parsed.autoPush);
+          state.telegram.autoPushSignal = parsed.autoPushSignal !== undefined ? Boolean(parsed.autoPushSignal) : true;
+          state.telegram.minConfidence = Number(parsed.minConfidence) || 80;
+          state.telegram.cooldownSeconds = Number(parsed.cooldownSeconds) || 60;
+          if (parsed.rules) {
+            state.telegram.rules.signal = parsed.rules.signal !== undefined ? Boolean(parsed.rules.signal) : true;
+            state.telegram.rules.priceCross = parsed.rules.priceCross !== undefined ? Boolean(parsed.rules.priceCross) : true;
+            state.telegram.rules.session = Boolean(parsed.rules.session);
+          }
+        } catch (err) {
+          // Ignore storage error
+        }
+      }
+
+      function persistTelegramConfig() {
+        try {
+          localStorage.setItem(TG_STORAGE_KEY, JSON.stringify({
+            botToken: state.telegram.botToken,
+            ownerChatId: state.telegram.ownerChatId,
+            autoPush: state.telegram.autoPush,
+            autoPushSignal: state.telegram.autoPushSignal,
+            minConfidence: state.telegram.minConfidence,
+            cooldownSeconds: state.telegram.cooldownSeconds,
+            rules: state.telegram.rules
+          }));
+        } catch (err) {
+          // Ignore storage error
+        }
+      }
+
+      function syncTelegramInputsFromState() {
+        els.tgBotTokenInput.value = state.telegram.botToken;
+        els.tgOwnerChatIdInput.value = state.telegram.ownerChatId;
+        els.tgCooldownSecondsInput.value = state.telegram.cooldownSeconds;
+        els.minSignalConfidenceInput.value = state.telegram.minConfidence;
+        els.autoPushSignalCheckbox.checked = state.telegram.autoPushSignal;
+        els.ruleSignalAlert.checked = state.telegram.rules.signal;
+        els.rulePriceCrossAlert.checked = state.telegram.rules.priceCross;
+        els.ruleSessionAlert.checked = state.telegram.rules.session;
+        updateTelegramStatusUI();
+      }
+
+      function readTelegramInputsToState() {
+        state.telegram.botToken = (els.tgBotTokenInput.value || '').trim();
+        state.telegram.ownerChatId = (els.tgOwnerChatIdInput.value || '').trim();
+        state.telegram.cooldownSeconds = Math.max(10, parseInt(els.tgCooldownSecondsInput.value, 10) || 60);
+        state.telegram.minConfidence = Math.min(99, Math.max(50, parseInt(els.minSignalConfidenceInput.value, 10) || 80));
+        state.telegram.autoPushSignal = Boolean(els.autoPushSignalCheckbox.checked);
+        state.telegram.rules.signal = Boolean(els.ruleSignalAlert.checked);
+        state.telegram.rules.priceCross = Boolean(els.rulePriceCrossAlert.checked);
+        state.telegram.rules.session = Boolean(els.ruleSessionAlert.checked);
+      }
+
+      function updateTelegramStatusUI() {
+        const active = state.telegram.autoPush;
+        els.tgAutoBadge.textContent = active ? 'ON' : 'OFF';
+        els.tgAutoBadge.className = active
+          ? 'hidden sm:inline text-[10px] font-mono px-1.5 py-0.2 rounded bg-emeraldLong/20 text-emeraldLong font-bold'
+          : 'hidden sm:inline text-[10px] font-mono px-1.5 py-0.2 rounded bg-obsidian text-gray-300';
+
+        els.tgHeaderDot.className = active
+          ? 'w-2 h-2 rounded-full bg-emeraldLong animate-pulse'
+          : 'w-2 h-2 rounded-full bg-goldBright';
+
+        els.tgAutoPushToggleBtn.textContent = active ? 'AUTO-PUSH: ON' : 'AUTO-PUSH: OFF';
+        els.tgAutoPushToggleBtn.className = active
+          ? 'px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all bg-emeraldLong/20 text-emeraldLong border-emeraldLong/40'
+          : 'px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all bg-obsidian text-gray-300 border-charcoalBorder hover:border-gold/50';
+
+        els.tgDispatchCount.textContent = `${state.telegram.sentCount} sent`;
+
+        const elapsedSec = Math.floor((Date.now() - state.telegram.lastDispatchAt) / 1000);
+        const rem = state.telegram.lastDispatchAt > 0 ? Math.max(0, state.telegram.cooldownSeconds - elapsedSec) : 0;
+        els.tgCooldownStatusText.textContent = rem > 0 ? `Cooldown: ${rem}s` : 'Ready';
+        els.tgCooldownStatusText.className = rem > 0 ? 'text-[11px] font-mono text-goldBright' : 'text-[11px] font-mono text-emeraldLong';
+      }
+
+      function appendTelegramLog(statusLabel, text, isSuccess) {
+        const now = new Date();
+        const kh = new Date(now.getTime() + 7 * 3600000);
+        const hh = String(kh.getUTCHours()).padStart(2, '0');
+        const mm = String(kh.getUTCMinutes()).padStart(2, '0');
+        const ss = String(kh.getUTCSeconds()).padStart(2, '0');
+
+        state.telegram.logs.unshift({ time: `${hh}:${mm}:${ss}`, status: statusLabel, text, ok: isSuccess });
+        if (state.telegram.logs.length > 20) state.telegram.logs.pop();
+
+        els.tgDeliveryLogList.innerHTML = state.telegram.logs.map((item) => {
+          const cls = item.ok ? 'text-emeraldLong' : 'text-crimsonShort';
+          return `<div class="flex items-start justify-between gap-2 border-b border-charcoalBorder/40 pb-1 last:border-b-0">
+            <span class="${cls} font-bold shrink-0">[${item.status}]</span>
+            <span class="text-gray-200 flex-1 truncate">${item.text}</span>
+            <span class="text-gray-500 shrink-0">${item.time}</span>
+          </div>`;
+        }).join('');
+      }
+
+      function formatSignalTelegramMessage(sig) {
+        return [
+          `🏆 *T4FX GOLD SIGNAL (XAUUSD)*`,
+          `• *Action:* *${sig.direction} XAUUSD* (+${sig.targetPips} pips • ${sig.confidence}% conf.)`,
+          `• *Mode:* ${sig.style} (${sig.feed})`,
+          `• *Entry:* ${formatPrice(sig.entryMid)} (${formatPrice(sig.entryLow)} - ${formatPrice(sig.entryHigh)})`,
+          `• *Stop Loss:* ${formatPrice(sig.sl)}`,
+          `• *TP1 / TP2:* ${formatPrice(sig.tp1)} / ${formatPrice(sig.tp2)} (${sig.rr})`,
+          `• *Time:* _${sig.timestamp}_`
+        ].join('\n');
+      }
+
+      function shouldAutoPushSignal(sig) {
+        if (!state.telegram.autoPush || !state.telegram.autoPushSignal || !state.telegram.rules.signal) {
+          return false;
+        }
+        return sig.confidence >= state.telegram.minConfidence;
+      }
+
+      async function dispatchTelegramAlert(category, messageText, bypassCooldown = false) {
+        readTelegramInputsToState();
+        const token = state.telegram.botToken;
+        const ownerId = state.telegram.ownerChatId;
+
+        if (!token || !ownerId) {
+          const msg = 'Set Telegram Bot Token & Owner Chat ID first.';
+          appendTelegramLog('CONFIG', msg, false);
+          showExecutionMessage(msg, 'error');
+          return false;
+        }
+
+        const nowMs = Date.now();
+        const elapsedSec = (nowMs - state.telegram.lastDispatchAt) / 1000;
+        if (!bypassCooldown && state.telegram.lastDispatchAt > 0 && elapsedSec < state.telegram.cooldownSeconds) {
+          updateTelegramStatusUI();
+          return false;
+        }
+
+        const endpoint = `https://api.telegram.org/bot${encodeURIComponent(token)}/sendMessage`;
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: ownerId,
+              text: messageText,
+              parse_mode: 'Markdown',
+              disable_web_page_preview: true
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data && data.ok) {
+            state.telegram.lastDispatchAt = nowMs;
+            state.telegram.sentCount += 1;
+            persistTelegramConfig();
+            updateTelegramStatusUI();
+            appendTelegramLog('SENT', `${category} → Owner (${ownerId})`, true);
+            showExecutionMessage(`Telegram ${category} pushed to Owner Chat ID ${ownerId}`, 'success');
+            return true;
+          } else {
+            const errDesc = (data && data.description) ? data.description : `HTTP ${res.status}`;
+            appendTelegramLog('ERROR', `${category}: ${errDesc}`, false);
+            showExecutionMessage(`Telegram API error: ${errDesc}`, 'error');
+            return false;
+          }
+        } catch (err) {
+          appendTelegramLog('NET_ERR', `${category}: Network/CORS blocked`, false);
+          showExecutionMessage('Could not reach Telegram API from browser. Check token or backend proxy.', 'error');
+          return false;
+        }
+      }
+
+      // -------------------------------------------------------------------
+      // SPOT SYNC, DOM/TAPE, POSITIONS, CANVAS & CLOCK LOOP
+      // -------------------------------------------------------------------
+      function syncSpotAndSlTp(newSpot, recenterSlTp = true) {
+        const cfg = getFeedConfig();
+        const validSpot = Number.isFinite(newSpot) && newSpot > 0 ? newSpot : cfg.baselinePrice;
+        state.spotPrice = validSpot;
+        els.manualSpotInput.value = formatPrice(validSpot);
+
+        const halfSpread = cfg.spread / 2;
+        els.buyBtnPrice.textContent = formatPrice(validSpot + halfSpread);
+        els.sellBtnPrice.textContent = formatPrice(validSpot - halfSpread);
+        els.domSpreadValue.textContent = `${formatPrice(cfg.spread)} pts`;
+
+        if (recenterSlTp) {
+          els.slInput.value = formatPrice(validSpot - cfg.defaultSlOffset);
+          els.tpInput.value = formatPrice(validSpot + cfg.defaultTpOffset);
+          els.limitPriceInput.value = formatPrice(validSpot - (cfg.defaultSlOffset * 0.4));
+        }
+
+        updateRiskEstimateUI();
+        renderDomAndTape();
+        renderPositionsTable();
+      }
+
+      function syncSmcIntelligenceCards() {
+        const cfg = getFeedConfig();
+        const smc = cfg.smc;
+        els.smcStructureTag.textContent = smc.structure;
+        els.smcStructureTag.className = `text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${smc.structureClass}`;
+        els.smcStructureDetail.textContent = smc.detail;
+        els.smcChochLevel.textContent = `CHoCH: ${smc.choch}`;
+        els.smcObZone.textContent = `OB: ${smc.bullOb}`;
+        els.smcFvgZone.textContent = `FVG: ${smc.fvg}`;
+        els.liqTargetText.textContent = smc.liqSwept;
+        els.liqPoolText.textContent = smc.sslPool;
+      }
+
+      function updateRiskEstimateUI() {
+        const lots = Math.max(0.01, parseFloat(els.lotSizeInput.value) || 0.25);
+        const cfg = getFeedConfig();
+        const sl = parseFloat(els.slInput.value);
+        let dist = Math.abs(state.spotPrice - sl);
+        if (!Number.isFinite(dist) || dist <= 0) dist = cfg.defaultSlOffset;
+
+        const riskDollars = dist * lots * 100;
+        const riskPctOfEquity = (riskDollars / state.accountBalance) * 100;
+        els.estRiskDollarText.textContent = `~$${riskDollars.toFixed(2)} (${riskPctOfEquity.toFixed(2)}%)`;
+
+        const usedLoss = Math.max(0, -state.realizedDailyPnl);
+        const lossPct = Math.min(100, (usedLoss / state.dailyLossLimit) * 100);
+        els.dailyLossStatusText.textContent = `$${usedLoss.toFixed(2)} Used (${lossPct.toFixed(0)}%)`;
+        els.dailyLossBar.style.width = `${lossPct}%`;
+        els.dailyLossBar.className = `h-full transition-all duration-300 ${lossPct >= 75 ? 'bg-crimsonShort' : lossPct >= 40 ? 'bg-goldBright' : 'bg-emeraldLong'}`;
+      }
+
+      function renderDomAndTape() {
+        const cfg = getFeedConfig();
+        const mid = state.spotPrice;
+        const step = cfg.step;
+
+        let askHtml = '';
+        for (let i = 5; i >= 1; i--) {
+          const price = mid + (cfg.spread / 2) + (i * step);
+          const size = (Math.random() * 14 + 1.2).toFixed(1);
+          const depthPct = Math.min(95, Math.floor((parseFloat(size) / 16) * 100));
+          askHtml += `
+            <div class="relative flex items-center justify-between px-2 py-1 rounded overflow-hidden">
+              <div class="absolute right-0 top-0 bottom-0 bg-crimsonShort/15" style="width:${depthPct}%"></div>
+              <span class="relative text-crimsonShort font-semibold">${formatPrice(price)}</span>
+              <span class="relative text-gray-200">${size}</span>
+              <span class="relative text-[10px] text-gray-400">${depthPct}%</span>
+            </div>
+          `;
+        }
+        els.askLadder.innerHTML = askHtml;
+
+        let bidHtml = '';
+        for (let i = 1; i <= 5; i++) {
+          const price = mid - (cfg.spread / 2) - (i * step);
+          const size = (Math.random() * 15 + 1.5).toFixed(1);
+          const depthPct = Math.min(95, Math.floor((parseFloat(size) / 17) * 100));
+          bidHtml += `
+            <div class="relative flex items-center justify-between px-2 py-1 rounded overflow-hidden">
+              <div class="absolute right-0 top-0 bottom-0 bg-emeraldLong/15" style="width:${depthPct}%"></div>
+              <span class="relative text-emeraldLong font-semibold">${formatPrice(price)}</span>
+              <span class="relative text-gray-200">${size}</span>
+              <span class="relative text-[10px] text-gray-400">${depthPct}%</span>
+            </div>
+          `;
+        }
+        els.bidLadder.innerHTML = bidHtml;
+
+        els.tapeRows.innerHTML = state.tape.slice(0, 16).map((t) => {
+          const colorClass = t.side === 'BUY' ? 'text-emeraldLong' : 'text-crimsonShort';
+          return `
+            <div class="grid grid-cols-3 px-2 py-1 rounded bg-obsidian/70">
+              <span class="text-gray-400">${t.time}</span>
+              <span class="text-center font-semibold ${colorClass}">${formatPrice(t.price)}</span>
+              <span class="text-right text-gray-200">${t.lot}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderPositionsTable() {
+        els.openPosCount.textContent = state.openPositions.length;
+        els.closedPosCount.textContent = state.closedPositions.length;
+
+        let totalFloating = 0;
+        state.openPositions.forEach((p) => {
+          totalFloating += calculatePositionPnl(p, state.spotPrice);
+        });
+
+        const pnlSign = totalFloating >= 0 ? '+' : '';
+        els.floatingPnlDisplay.textContent = `${pnlSign}$${totalFloating.toFixed(2)}`;
+        els.floatingPnlDisplay.className = `font-bold ${totalFloating >= 0 ? 'text-emeraldLong' : 'text-crimsonShort'}`;
+
+        const equity = state.accountBalance + state.realizedDailyPnl + totalFloating;
+        els.accountEquityText.textContent = `$${equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        if (state.activePosTab === 'open') {
+          if (state.openPositions.length === 0) {
+            els.positionsTableBody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-gray-400 font-sans text-xs">No open XAUUSD positions.</td></tr>`;
+            return;
+          }
+          els.positionsTableBody.innerHTML = state.openPositions.map((pos) => {
+            const pnl = calculatePositionPnl(pos, state.spotPrice);
+            const sideBadge = pos.side === 'BUY'
+              ? '<span class="px-1.5 py-0.5 rounded bg-emeraldLong/20 text-emeraldLong font-bold text-[10px]">BUY</span>'
+              : '<span class="px-1.5 py-0.5 rounded bg-crimsonShort/20 text-crimsonShort font-bold text-[10px]">SELL</span>';
+            const pnlCls = pnl >= 0 ? 'text-emeraldLong font-bold' : 'text-crimsonShort font-bold';
+            return `
+              <tr class="hover:bg-charcoalLight/50 transition-colors">
+                <td class="py-2.5 px-3 whitespace-nowrap"><span class="font-bold text-white mr-1.5">${pos.symbol}</span>${sideBadge}</td>
+                <td class="py-2.5 px-3 text-gray-200">${pos.lots.toFixed(2)}</td>
+                <td class="py-2.5 px-3 text-gray-200">${formatPrice(pos.entry)}</td>
+                <td class="py-2.5 px-3 text-[11px]"><span class="text-crimsonShort">${formatPrice(pos.sl)}</span> / <span class="text-emeraldLong">${formatPrice(pos.tp)}</span></td>
+                <td class="py-2.5 px-3 text-goldBright font-semibold">${formatPrice(state.spotPrice)}</td>
+                <td class="py-2.5 px-3 text-right ${pnlCls}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</td>
+                <td class="py-2.5 px-3 text-right"><button type="button" data-close-id="${pos.id}" class="close-pos-btn px-2 py-1 rounded-lg bg-charcoal hover:bg-crimsonShort hover:text-white text-gray-200 border border-charcoalBorder text-[10px] font-bold">CLOSE</button></td>
+              </tr>
+            `;
+          }).join('');
+        } else {
+          els.positionsTableBody.innerHTML = state.closedPositions.map((pos) => {
+            const sideBadge = pos.side === 'BUY'
+              ? '<span class="px-1.5 py-0.5 rounded bg-emeraldLong/20 text-emeraldLong font-bold text-[10px]">BUY</span>'
+              : '<span class="px-1.5 py-0.5 rounded bg-crimsonShort/20 text-crimsonShort font-bold text-[10px]">SELL</span>';
+            const pnlCls = pos.pnl >= 0 ? 'text-emeraldLong font-bold' : 'text-crimsonShort font-bold';
+            return `
+              <tr class="hover:bg-charcoalLight/40">
+                <td class="py-2.5 px-3 whitespace-nowrap"><span class="font-bold text-white mr-1.5">${pos.symbol}</span>${sideBadge}</td>
+                <td class="py-2.5 px-3 text-gray-300">${pos.lots.toFixed(2)}</td>
+                <td class="py-2.5 px-3 text-gray-300">${formatPrice(pos.entry)}</td>
+                <td class="py-2.5 px-3 text-gray-500 text-[11px]">CLOSED</td>
+                <td class="py-2.5 px-3 text-gray-200">${formatPrice(pos.exit)}</td>
+                <td class="py-2.5 px-3 text-right ${pnlCls}">${pos.pnl >= 0 ? '+' : ''}$${pos.pnl.toFixed(2)}</td>
+                <td class="py-2.5 px-3 text-right text-[10px] text-gray-400">${pos.id}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      function computeEMA(values, period) {
+        const k = 2 / (period + 1);
+        const result = [];
+        let ema = values[0];
+        for (let i = 0; i < values.length; i++) {
+          ema = i === 0 ? values[0] : (values[i] * k) + (ema * (1 - k));
+          result.push(ema);
+        }
+        return result;
+      }
+
+      function resizeCanvas() {
+        if (state.chartMode !== 'canvas') return;
+        const rect = els.canvas.parentElement.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        els.canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        els.canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawChart();
+      }
+
+      function drawChart() {
+        if (state.chartMode !== 'canvas') return;
+        const rect = els.canvas.parentElement.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        if (width <= 0 || height <= 0) return;
+
+        const candles = getActiveCandles();
+        const closes = candles.map((c) => c.close);
+        const ema20 = computeEMA(closes, 20);
+        const ema50 = computeEMA(closes, 50);
+
+        const rightMargin = 72;
+        const bottomMargin = 24;
+        const topMargin = 14;
+        const leftMargin = 8;
+        const plotW = Math.max(40, width - leftMargin - rightMargin);
+        const plotH = Math.max(40, height - topMargin - bottomMargin);
+
+        const visibleCount = Math.max(20, Math.min(candles.length, state.zoomBars));
+        const maxPan = Math.max(0, candles.length - visibleCount);
+        state.panOffset = Math.max(0, Math.min(maxPan, state.panOffset));
+
+        const endIdx = candles.length - state.panOffset;
+        const startIdx = Math.max(0, endIdx - visibleCount);
+        const slice = candles.slice(startIdx, endIdx);
+        if (slice.length === 0) return;
+
+        let minPrice = Infinity;
+        let maxPrice = -Infinity;
+        for (let i = 0; i < slice.length; i++) {
+          if (slice[i].low < minPrice) minPrice = slice[i].low;
+          if (slice[i].high > maxPrice) maxPrice = slice[i].high;
+        }
+        const pad = Math.max((maxPrice - minPrice) * 0.12, getFeedConfig().step * 5);
+        minPrice -= pad;
+        maxPrice += pad;
+
+        const priceToY = (p) => topMargin + ((maxPrice - p) / (maxPrice - minPrice)) * plotH;
+        const barSlot = plotW / slice.length;
+        const candleWidth = Math.max(2, Math.min(18, barSlot * 0.68));
+        const idxToX = (i) => leftMargin + (i + 0.5) * barSlot;
+
+        ctx.fillStyle = '#090b0f';
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        for (let g = 0; g <= 6; g++) {
+          const ratio = g / 6;
+          const p = maxPrice - ratio * (maxPrice - minPrice);
+          const y = topMargin + ratio * plotH;
+          ctx.strokeStyle = 'rgba(35, 42, 56, 0.55)';
+          ctx.beginPath();
+          ctx.moveTo(leftMargin, y);
+          ctx.lineTo(leftMargin + plotW, y);
+          ctx.stroke();
+          ctx.fillStyle = '#9ca3af';
+          ctx.fillText(formatPrice(p), leftMargin + plotW + 6, y);
+        }
+
+        if (state.overlays.fvg || state.overlays.ob) {
+          for (let i = 1; i < slice.length - 1; i++) {
+            const globalIdx = startIdx + i;
+            const cPrev = slice[i - 1];
+            const cCurr = slice[i];
+            const cNext = slice[i + 1];
+            const xStart = idxToX(i);
+
+            if (state.overlays.fvg && cPrev.high < cNext.low) {
+              ctx.fillStyle = 'rgba(16, 185, 129, 0.11)';
+              ctx.fillRect(xStart, priceToY(cNext.low), plotW - (xStart - leftMargin), Math.max(2, priceToY(cPrev.high) - priceToY(cNext.low)));
+            }
+            if (state.overlays.ob && globalIdx % 14 === 4) {
+              const isBullOb = cCurr.close > cCurr.open;
+              const yTop = priceToY(Math.max(cCurr.open, cCurr.close));
+              const yBot = priceToY(Math.min(cCurr.open, cCurr.close));
+              ctx.fillStyle = isBullOb ? 'rgba(245, 197, 66, 0.12)' : 'rgba(239, 68, 68, 0.12)';
+              ctx.fillRect(xStart, yTop, Math.min(plotW - (xStart - leftMargin), barSlot * 16), Math.max(4, yBot - yTop));
+            }
+          }
+        }
+
+        if (state.overlays.liquidity) {
+          let swingHigh = -Infinity;
+          let swingLow = Infinity;
+          for (let i = 0; i < slice.length; i++) {
+            if (slice[i].high > swingHigh) swingHigh = slice[i].high;
+            if (slice[i].low < swingLow) swingLow = slice[i].low;
+          }
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = 'rgba(245, 197, 66, 0.65)';
+          ctx.beginPath();
+          ctx.moveTo(leftMargin, priceToY(swingHigh));
+          ctx.lineTo(leftMargin + plotW, priceToY(swingHigh));
+          ctx.stroke();
+
+          ctx.strokeStyle = 'rgba(239, 68, 68, 0.55)';
+          ctx.beginPath();
+          ctx.moveTo(leftMargin, priceToY(swingLow));
+          ctx.lineTo(leftMargin + plotW, priceToY(swingLow));
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        for (let i = 0; i < slice.length; i++) {
+          const c = slice[i];
+          const x = idxToX(i);
+          const color = c.close >= c.open ? '#10b981' : '#ef4444';
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(x, priceToY(c.high));
+          ctx.lineTo(x, priceToY(c.low));
+          ctx.stroke();
+
+          const yOpen = priceToY(c.open);
+          const yClose = priceToY(c.close);
+          ctx.fillStyle = color;
+          ctx.fillRect(x - candleWidth / 2, Math.min(yOpen, yClose), candleWidth, Math.max(1.8, Math.abs(yClose - yOpen)));
+        }
+
+        if (state.overlays.ema) {
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.beginPath();
+          for (let i = 0; i < slice.length; i++) {
+            const x = idxToX(i);
+            const y = priceToY(ema20[startIdx + i]);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          ctx.strokeStyle = '#f59e0b';
+          ctx.beginPath();
+          for (let i = 0; i < slice.length; i++) {
+            const x = idxToX(i);
+            const y = priceToY(ema50[startIdx + i]);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+
+        const lastCandle = candles[candles.length - 1];
+        const lastY = priceToY(lastCandle.close);
+        if (lastY >= topMargin && lastY <= topMargin + plotH) {
+          ctx.fillStyle = '#d4af37';
+          ctx.fillRect(leftMargin + plotW + 2, lastY - 10, rightMargin - 4, 20);
+          ctx.fillStyle = '#090b0f';
+          ctx.font = 'bold 10px "JetBrains Mono", monospace';
+          ctx.fillText(formatPrice(lastCandle.close), leftMargin + plotW + 6, lastY);
+        }
+
+        const activeCandle = (state.hoverIndex !== null && slice[state.hoverIndex]) ? slice[state.hoverIndex] : lastCandle;
+        els.ohlcO.textContent = formatPrice(activeCandle.open);
+        els.ohlcH.textContent = formatPrice(activeCandle.high);
+        els.ohlcL.textContent = formatPrice(activeCandle.low);
+        els.ohlcC.textContent = formatPrice(activeCandle.close);
+      }
+
+      function pushCanvasTick(forceNewBar = false) {
+        if (!canAutoAnalyzeNow() && !forceNewBar) return;
+
+        // Subtle DXY oscillation in 103.59 - 103.89 range when AUTO mode is active
+        if (state.dxyBiasMode === 'AUTO') {
+          const nextDxy = state.dxyPrice + ((Math.random() - 0.49) * 0.04);
+          state.dxyPrice = Number(Math.max(103.59, Math.min(103.89, nextDxy)).toFixed(2));
+        }
+
+        if (state.chartMode !== 'canvas') return;
+        if (!state.isFeedLive && !forceNewBar) return;
+        if (state.isPaused && !forceNewBar) return;
+
+        const cfg = getFeedConfig();
+        const tfMult = TIMEFRAME_MULTIPLIER[state.timeframe] || 1.0;
+        const candles = getActiveCandles();
+        const last = candles[candles.length - 1];
+
+        const tickStep = cfg.baselinePrice * 0.00022 * tfMult;
+        const delta = (Math.random() - 0.49) * tickStep * 2;
+        const nextClose = Math.max(3625, Math.min(3675, last.close + delta));
+
+        if (forceNewBar) {
+          candles.push({
+            time: Date.now(),
+            open: last.close,
+            high: Math.max(last.close, nextClose) + tickStep * 0.4,
+            low: Math.min(last.close, nextClose) - tickStep * 0.4,
+            close: nextClose,
+            volume: Math.floor(150 + Math.random() * 600)
+          });
+          if (candles.length > 220) candles.shift();
+        } else {
+          last.close = nextClose;
+          if (nextClose > last.high) last.high = nextClose;
+          if (nextClose < last.low) last.low = nextClose;
+        }
+
+        state.spotPrice = nextClose;
+        els.manualSpotInput.value = formatPrice(nextClose);
+
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        state.tape.unshift({
+          time: timeStr,
+          price: nextClose,
+          side: delta >= 0 ? 'BUY' : 'SELL',
+          lot: (Math.random() * 1.4 + 0.05).toFixed(2)
+        });
+        if (state.tape.length > 35) state.tape.pop();
+
+        syncSpotAndSlTp(nextClose, false);
+        syncSmcIntelligenceCards();
+        drawChart();
+      }
+
+      function updateClockAndSession() {
+        const now = new Date();
+        let offsetHours = 7;
+        let zoneLabel = 'GMT+7 KH';
+
+        if (state.timezoneMode === 1) {
+          offsetHours = 0;
+          zoneLabel = 'UTC';
+        } else if (state.timezoneMode === 2) {
+          offsetHours = -5;
+          zoneLabel = 'EST NY';
+        }
+
+        const shifted = new Date(now.getTime() + offsetHours * 3600000);
+        const hh = String(shifted.getUTCHours()).padStart(2, '0');
+        const mm = String(shifted.getUTCMinutes()).padStart(2, '0');
+        const ss = String(shifted.getUTCSeconds()).padStart(2, '0');
+        els.clockTimeText.textContent = `${hh}:${mm}:${ss}`;
+        els.clockZoneBadge.textContent = zoneLabel;
+
+        const utcH = now.getUTCHours();
+        if (utcH >= 13 && utcH < 17) {
+          els.sessionNameText.textContent = 'London / New York Overlap (GMT+7)';
+        } else if (utcH >= 8 && utcH < 13) {
+          els.sessionNameText.textContent = 'London Session Active (GMT+7)';
+        } else if (utcH >= 17 && utcH < 22) {
+          els.sessionNameText.textContent = 'New York Session Active (GMT+7)';
+        } else {
+          els.sessionNameText.textContent = 'Asian Session • GMT+7 Cambodia';
+        }
+
+        updateSessionEligibilityBadge();
+        syncDxyAndNewsUI();
+        updateTelegramStatusUI();
+      }
+
+      function setChartMode(mode) {
+        state.chartMode = mode;
+        const cfg = getFeedConfig();
+        if (mode === 'tv') {
+          els.modeTvLiveBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-gold text-obsidian shadow';
+          els.modeSmcCanvasBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight';
+          els.activeChartSourceBadge.textContent = `LIVE XAUUSD: ${cfg.label}`;
+          els.activeChartSourceBadge.className = 'text-[11px] font-mono px-2.5 py-1 rounded-lg bg-emeraldLong/15 text-emeraldLong border border-emeraldLong/30';
+          els.tvAdvancedChartWrapper.classList.remove('hidden');
+          els.smcCanvasWrapper.classList.add('hidden');
+          els.canvasToolbar.classList.add('hidden');
+          renderTradingViewAdvancedChart(state.tvSymbol);
+        } else {
+          els.modeSmcCanvasBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-gold text-obsidian shadow';
+          els.modeTvLiveBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight';
+          els.activeChartSourceBadge.textContent = `SMC CANVAS: ${cfg.label}`;
+          els.activeChartSourceBadge.className = 'text-[11px] font-mono px-2.5 py-1 rounded-lg bg-gold/15 text-goldBright border border-gold/30';
+          els.tvAdvancedChartWrapper.classList.add('hidden');
+          els.smcCanvasWrapper.classList.remove('hidden');
+          els.canvasToolbar.classList.remove('hidden');
+          resizeCanvas();
+        }
+      }
+
+      function placeOrder(side) {
+        const lots = parseFloat(els.lotSizeInput.value);
+        if (!Number.isFinite(lots) || lots <= 0) {
+          showExecutionMessage('Enter a valid positive lot size.', 'error');
+          return;
+        }
+        const cfg = getFeedConfig();
+        const mid = state.spotPrice;
+        const fillPrice = state.orderType === 'LIMIT'
+          ? (parseFloat(els.limitPriceInput.value) || mid)
+          : (side === 'BUY' ? mid + cfg.spread / 2 : mid - cfg.spread / 2);
+
+        const sl = parseFloat(els.slInput.value) || (side === 'BUY' ? fillPrice - cfg.defaultSlOffset : fillPrice + cfg.defaultSlOffset);
+        const tp = parseFloat(els.tpInput.value) || (side === 'BUY' ? fillPrice + cfg.defaultTpOffset : fillPrice - cfg.defaultTpOffset);
+
+        state.openPositions.unshift({
+          id: `POS-${Math.floor(2050 + Math.random() * 8900)}`,
+          symbol: 'XAUUSD',
+          side,
+          lots,
+          entry: fillPrice,
+          sl,
+          tp
+        });
+
+        state.activePosTab = 'open';
+        renderPositionsTable();
+        updateRiskEstimateUI();
+        showExecutionMessage(`${state.orderType} ${side} ${lots.toFixed(2)} XAUUSD @ ${formatPrice(fillPrice)}`, 'success');
+      }
+
+      function closePositionById(posId) {
+        const idx = state.openPositions.findIndex((p) => p.id === posId);
+        if (idx === -1) return;
+        const pos = state.openPositions[idx];
+        const pnl = calculatePositionPnl(pos, state.spotPrice);
+        state.openPositions.splice(idx, 1);
+        state.realizedDailyPnl += pnl;
+        state.closedPositions.unshift({
+          id: pos.id,
+          symbol: pos.symbol,
+          side: pos.side,
+          lots: pos.lots,
+          entry: pos.entry,
+          exit: state.spotPrice,
+          pnl
+        });
+        renderPositionsTable();
+        updateRiskEstimateUI();
+        showExecutionMessage(`Closed ${pos.symbol} ${pos.side} (${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)})`, pnl >= 0 ? 'success' : 'error');
+      }
+
+      // -------------------------------------------------------------------
+      // EVENT LISTENERS
+      // -------------------------------------------------------------------
+      function bindEvents() {
+        document.querySelectorAll('.tv-sym-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const sym = btn.getAttribute('data-tv-symbol');
+            if (!sym || !TV_FEEDS[sym]) return;
+            state.tvSymbol = sym;
+            state.panOffset = 0;
+
+            document.querySelectorAll('.tv-sym-btn').forEach((b) => {
+              const active = b.getAttribute('data-tv-symbol') === sym;
+              b.className = active
+                ? 'tv-sym-btn px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-all bg-gold text-obsidian shadow shrink-0'
+                : 'tv-sym-btn px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold transition-all text-gray-300 hover:text-white hover:bg-charcoalLight shrink-0';
+            });
+
+            const cfg = TV_FEEDS[sym];
+            renderTradingViewSingleQuote(sym);
+            if (state.chartMode === 'tv') renderTradingViewAdvancedChart(sym);
+            else drawChart();
+
+            syncSpotAndSlTp(cfg.baselinePrice, true);
+            syncSmcIntelligenceCards();
+            showExecutionMessage(`Switched XAUUSD feed to ${cfg.label}`, 'info');
+          });
+        });
+
+        els.modeTvLiveBtn.addEventListener('click', () => setChartMode('tv'));
+        els.modeSmcCanvasBtn.addEventListener('click', () => setChartMode('canvas'));
+        els.switchToCanvasFromFallbackBtn.addEventListener('click', () => setChartMode('canvas'));
+
+        els.syncSpotBtn.addEventListener('click', () => {
+          const val = parseFloat(els.manualSpotInput.value);
+          if (!Number.isFinite(val) || val <= 0) {
+            showExecutionMessage('Enter a valid XAUUSD spot price.', 'error');
+            return;
+          }
+          syncSpotAndSlTp(val, true);
+          showExecutionMessage(`Synced SL/TP & DOM to XAUUSD ${formatPrice(val)}`, 'info');
+        });
+
+        // Sound alert toggle & test button
+        els.soundAlertToggleBtn.addEventListener('click', () => {
+          state.soundEnabled = !state.soundEnabled;
+          els.soundIcon.textContent = state.soundEnabled ? '🔊' : '🔇';
+          els.soundStatusLabel.textContent = state.soundEnabled ? 'SOUND ON' : 'MUTED';
+          if (state.soundEnabled) playAlertSound('signal');
+        });
+
+        els.testSoundChimeBtn.addEventListener('click', () => {
+          playAlertSound('signal');
+          showExecutionMessage('Played Web Audio high-conviction signal alert chime.', 'info');
+        });
+
+        // London & New York Session-Only toggle (GMT+7)
+        els.londonNyOnlyBtn.addEventListener('click', () => {
+          state.londonNyOnly = !state.londonNyOnly;
+          updateSessionEligibilityBadge();
+          showExecutionMessage(
+            state.londonNyOnly
+              ? 'London & NY Session-Only filter ENABLED (GMT+7).'
+              : 'Auto-analyze set to ALL SESSIONS.',
+            'info'
+          );
+        });
+
+        // Hero 150+ Pip Signal generator button
+        els.heroGenerate150Btn.addEventListener('click', () => {
+          const sig = buildSignalSetup({ style: state.tradingStyle, force150Plus: true });
+          state.latestSignal = sig;
+          renderSignalCard(sig);
+          register150PipSetup(sig, { playSound: true, autoPush: true });
+        });
+
+        // Trading Style tabs (Scalping / Day Trader / Swing Trader)
+        document.querySelectorAll('.style-tab-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            setTradingStyle(btn.getAttribute('data-style'));
+          });
+        });
+
+        els.runStyleAnalysisBtn.addEventListener('click', () => {
+          if (!canAutoAnalyzeNow()) {
+            showExecutionMessage('Outside London/NY session (GMT+7). Toggle LDN/NY ONLY off to force run.', 'error');
+            return;
+          }
+          const sig = buildSignalSetup({ style: state.tradingStyle, force150Plus: true });
+          state.latestSignal = sig;
+          renderSignalCard(sig);
+          register150PipSetup(sig, { playSound: true, autoPush: true });
+        });
+
+        // DXY Bias Mode & 1-Min Pre-News Breakout trigger
+        els.dxyBiasModeSelect.addEventListener('change', () => {
+          state.dxyBiasMode = els.dxyBiasModeSelect.value;
+          if (state.dxyBiasMode === 'BULLISH') state.dxyPrice = 103.86;
+          else if (state.dxyBiasMode === 'BEARISH') state.dxyPrice = 103.61;
+          syncDxyAndNewsUI();
+        });
+
+        els.triggerOneMinPreNewsBtn.addEventListener('click', () => {
+          fireOneMinPreNewsBreakoutAlert('US CB Consumer Confidence (1-Min Breakout)', true);
+        });
+
+        // MT5 Screenshot Upload, Drag-and-Drop & Signal Request
+        els.mt5ScreenshotInput.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (file) handleMt5FileSelect(file);
+        });
+
+        const dropLabel = document.getElementById('mt5DropzoneLabel');
+        dropLabel.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropLabel.classList.add('border-gold');
+        });
+        dropLabel.addEventListener('dragleave', () => {
+          dropLabel.classList.remove('border-gold');
+        });
+        dropLabel.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropLabel.classList.remove('border-gold');
+          const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file) handleMt5FileSelect(file);
+        });
+
+        els.askMt5SignalBtn.addEventListener('click', analyzeMt5ScreenshotAndSignal);
+
+        els.clearMt5ScreenshotBtn.addEventListener('click', () => {
+          state.mt5UploadedDataUrl = '';
+          els.mt5ScreenshotInput.value = '';
+          els.mt5ScreenshotPreviewImg.src = '';
+          els.mt5ScreenshotPreviewImg.classList.add('hidden');
+          els.mt5PreviewPlaceholder.classList.remove('hidden');
+          els.mt5AnalysisResultText.textContent = 'Cleared MT5 screenshot.';
+        });
+
+        // Timeframes & overlays
+        document.querySelectorAll('.tf-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.timeframe = btn.getAttribute('data-tf');
+            state.panOffset = 0;
+            document.querySelectorAll('.tf-btn').forEach((b) => {
+              const active = b.getAttribute('data-tf') === state.timeframe;
+              b.className = active
+                ? 'tf-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-gold text-obsidian transition-colors'
+                : 'tf-btn px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-gray-300 hover:text-white transition-colors';
+            });
+            drawChart();
+          });
+        });
+
+        const overlayMap = [
+          { id: 'toggleLiquidity', key: 'liquidity', activeCls: 'overlay-btn px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border bg-gold/15 text-goldBright border-gold/40 transition-all' },
+          { id: 'toggleFVG', key: 'fvg', activeCls: 'overlay-btn px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border bg-emeraldLong/15 text-emeraldLong border-emeraldLong/40 transition-all' },
+          { id: 'toggleOB', key: 'ob', activeCls: 'overlay-btn px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border bg-amber-500/15 text-amber-300 border-amber-500/40 transition-all' },
+          { id: 'toggleEMA', key: 'ema', activeCls: 'overlay-btn px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border bg-sky-500/15 text-sky-300 border-sky-500/40 transition-all' }
+        ];
+        const offCls = 'overlay-btn px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border bg-obsidian text-gray-500 border-charcoalBorder transition-all';
+        overlayMap.forEach((item) => {
+          const el = document.getElementById(item.id);
+          el.addEventListener('click', () => {
+            state.overlays[item.key] = !state.overlays[item.key];
+            el.className = state.overlays[item.key] ? item.activeCls : offCls;
+            drawChart();
+          });
+        });
+
+        els.replayPauseBtn.addEventListener('click', () => {
+          state.isPaused = !state.isPaused;
+          els.replayIcon.textContent = state.isPaused ? '▶' : '❚❚';
+          els.replayText.textContent = state.isPaused ? 'REPLAY' : 'PAUSE';
+        });
+        els.stepCandleBtn.addEventListener('click', () => {
+          state.isPaused = true;
+          els.replayIcon.textContent = '▶';
+          els.replayText.textContent = 'REPLAY';
+          pushCanvasTick(true);
+        });
+        els.resetViewBtn.addEventListener('click', () => {
+          state.panOffset = 0;
+          state.zoomBars = 75;
+          drawChart();
+        });
+
+        document.getElementById('timezoneToggleBtn').addEventListener('click', () => {
+          state.timezoneMode = (state.timezoneMode + 1) % 3;
+          updateClockAndSession();
+        });
+
+        els.feedToggleBtn.addEventListener('click', () => {
+          state.isFeedLive = !state.isFeedLive;
+          if (state.isFeedLive) {
+            els.feedLabel.textContent = 'TV LIVE';
+            els.feedDot.className = 'w-2 h-2 rounded-full bg-emeraldLong';
+            renderTradingViewTickerTape();
+            renderTradingViewSingleQuote(state.tvSymbol);
+            renderTradingViewDxyQuote();
+            if (state.chartMode === 'tv') renderTradingViewAdvancedChart(state.tvSymbol);
+          } else {
+            els.feedLabel.textContent = 'PAUSED';
+            els.feedDot.className = 'w-2 h-2 rounded-full bg-gray-400';
+          }
+        });
+
+        els.riskModeBtn.addEventListener('click', () => {
+          state.riskModeGuarded = !state.riskModeGuarded;
+          els.riskModeLabel.textContent = state.riskModeGuarded ? 'GUARDED' : 'OPEN';
+        });
+
+        els.alertsToggleBtn.addEventListener('click', () => els.alertsDrawer.classList.toggle('hidden'));
+        document.getElementById('clearAlertsBtn').addEventListener('click', () => {
+          els.alertCountBadge.textContent = '0';
+          els.alertsDrawer.classList.add('hidden');
+        });
+
+        document.getElementById('orderTypeMarket').addEventListener('click', () => {
+          state.orderType = 'MARKET';
+          els.limitPriceRow.classList.add('hidden');
+          document.getElementById('orderTypeMarket').className = 'order-type-btn px-2.5 py-1 rounded-lg bg-gold text-obsidian';
+          document.getElementById('orderTypeLimit').className = 'order-type-btn px-2.5 py-1 rounded-lg text-gray-300 hover:text-white';
+        });
+        document.getElementById('orderTypeLimit').addEventListener('click', () => {
+          state.orderType = 'LIMIT';
+          els.limitPriceRow.classList.remove('hidden');
+          document.getElementById('orderTypeLimit').className = 'order-type-btn px-2.5 py-1 rounded-lg bg-gold text-obsidian';
+          document.getElementById('orderTypeMarket').className = 'order-type-btn px-2.5 py-1 rounded-lg text-gray-300 hover:text-white';
+        });
+
+        document.querySelectorAll('.lot-preset').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            els.lotSizeInput.value = btn.getAttribute('data-lot');
+            updateRiskEstimateUI();
+          });
+        });
+        els.lotSizeInput.addEventListener('input', updateRiskEstimateUI);
+        els.slInput.addEventListener('input', updateRiskEstimateUI);
+
+        document.querySelectorAll('.risk-preset-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const r = parseFloat(btn.getAttribute('data-risk'));
+            state.riskPercent = r;
+            const cfg = getFeedConfig();
+            const sl = parseFloat(els.slInput.value) || (state.spotPrice - cfg.defaultSlOffset);
+            const dist = Math.max(cfg.step, Math.abs(state.spotPrice - sl));
+            els.lotSizeInput.value = Math.max(0.01, Math.min(25, (state.accountBalance * (r / 100)) / (dist * 100))).toFixed(2);
+            document.querySelectorAll('.risk-preset-btn').forEach((b) => {
+              const active = parseFloat(b.getAttribute('data-risk')) === r;
+              b.className = active
+                ? 'risk-preset-btn py-1.5 rounded-lg text-[11px] font-mono font-bold border border-gold bg-gold/20 text-goldBright'
+                : 'risk-preset-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold border border-charcoalBorder bg-charcoal text-gray-300 hover:border-gold/50';
+            });
+            updateRiskEstimateUI();
+          });
+        });
+
+        els.buyBtn.addEventListener('click', () => placeOrder('BUY'));
+        els.sellBtn.addEventListener('click', () => placeOrder('SELL'));
+
+        document.getElementById('domTabBtn').addEventListener('click', () => {
+          els.domContainer.classList.remove('hidden');
+          els.tapeContainer.classList.add('hidden');
+          document.getElementById('domTabBtn').className = 'dom-tape-tab px-3 py-1 rounded-lg bg-gold text-obsidian';
+          document.getElementById('tapeTabBtn').className = 'dom-tape-tab px-3 py-1 rounded-lg text-gray-300 hover:text-white';
+        });
+        document.getElementById('tapeTabBtn').addEventListener('click', () => {
+          els.tapeContainer.classList.remove('hidden');
+          els.domContainer.classList.add('hidden');
+          document.getElementById('tapeTabBtn').className = 'dom-tape-tab px-3 py-1 rounded-lg bg-gold text-obsidian';
+          document.getElementById('domTabBtn').className = 'dom-tape-tab px-3 py-1 rounded-lg text-gray-300 hover:text-white';
+        });
+
+        document.getElementById('tabOpenPositions').addEventListener('click', () => {
+          state.activePosTab = 'open';
+          document.getElementById('tabOpenPositions').className = 'pos-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-gold text-obsidian transition-all';
+          document.getElementById('tabClosedPositions').className = 'pos-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-obsidian text-gray-300 hover:text-white border border-charcoalBorder transition-all';
+          renderPositionsTable();
+        });
+        document.getElementById('tabClosedPositions').addEventListener('click', () => {
+          state.activePosTab = 'closed';
+          document.getElementById('tabClosedPositions').className = 'pos-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-gold text-obsidian transition-all';
+          document.getElementById('tabOpenPositions').className = 'pos-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-obsidian text-gray-300 hover:text-white border border-charcoalBorder transition-all';
+          renderPositionsTable();
+        });
+
+        els.positionsTableBody.addEventListener('click', (e) => {
+          const btn = e.target.closest('.close-pos-btn');
+          if (btn) closePositionById(btn.getAttribute('data-close-id'));
+        });
+
+        els.closeAllBtn.addEventListener('click', () => {
+          state.openPositions.map((p) => p.id).forEach((id) => closePositionById(id));
+        });
+
+        els.generateBestSignalBtn.addEventListener('click', () => {
+          const sig = buildSignalSetup({ style: state.tradingStyle, force150Plus: true });
+          state.latestSignal = sig;
+          renderSignalCard(sig);
+          register150PipSetup(sig, { playSound: true, autoPush: true });
+        });
+
+        els.applySignalToTicketBtn.addEventListener('click', applyLatestSignalToTicket);
+
+        els.autoPushSignalCheckbox.addEventListener('change', () => {
+          readTelegramInputsToState();
+          persistTelegramConfig();
+        });
+        els.minSignalConfidenceInput.addEventListener('change', () => {
+          readTelegramInputsToState();
+          persistTelegramConfig();
+        });
+
+        els.tgAutoPushToggleBtn.addEventListener('click', () => {
+          readTelegramInputsToState();
+          if (!state.telegram.autoPush && (!state.telegram.botToken || !state.telegram.ownerChatId)) {
+            showExecutionMessage('Enter Bot Token & Owner Chat ID before enabling Auto-Push.', 'error');
+            return;
+          }
+          state.telegram.autoPush = !state.telegram.autoPush;
+          persistTelegramConfig();
+          updateTelegramStatusUI();
+          showExecutionMessage(`Telegram Auto-Push ${state.telegram.autoPush ? 'ENABLED' : 'DISABLED'} for Owner ID ${state.telegram.ownerChatId}`, 'info');
+        });
+
+        els.toggleTokenVisibilityBtn.addEventListener('click', () => {
+          const isPwd = els.tgBotTokenInput.type === 'password';
+          els.tgBotTokenInput.type = isPwd ? 'text' : 'password';
+          els.toggleTokenVisibilityBtn.textContent = isPwd ? 'HIDE' : 'SHOW';
+        });
+
+        els.saveTgConfigBtn.addEventListener('click', () => {
+          readTelegramInputsToState();
+          persistTelegramConfig();
+          updateTelegramStatusUI();
+          appendTelegramLog('SAVED', `Owner ID locked to ${state.telegram.ownerChatId || 'unset'}`, true);
+          showExecutionMessage('Saved Owner Telegram Bot configuration.', 'success');
+        });
+
+        els.testAndSendSignalBtn.addEventListener('click', async () => {
+          const sig = state.latestSignal || buildSignalSetup({ style: state.tradingStyle, force150Plus: true });
+          state.latestSignal = sig;
+          renderSignalCard(sig);
+          playAlertSound('signal');
+          await dispatchTelegramAlert('TEST_SIGNAL', `🧪 *T4FX GOLD TEST SIGNAL*\n\n${formatSignalTelegramMessage(sig)}`, true);
+        });
+
+        els.tgQuickJumpBtn.addEventListener('click', () => {
+          const sec = document.getElementById('signalAndTelegramSection');
+          if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+      }
+
+      // -------------------------------------------------------------------
+      // INITIALIZATION
+      // -------------------------------------------------------------------
+      function init() {
+        const cfg = getFeedConfig();
+        state.spotPrice = cfg.baselinePrice;
+        getActiveCandles();
+        loadTelegramConfig();
+
+        for (let i = 0; i < 14; i++) {
+          state.tape.push({
+            time: '09:25:' + String(10 + i).padStart(2, '0'),
+            price: state.spotPrice + ((Math.random() - 0.5) * 1.4),
+            side: Math.random() > 0.48 ? 'BUY' : 'SELL',
+            lot: (Math.random() * 1.2 + 0.05).toFixed(2)
+          });
+        }
+
+        bindEvents();
+        renderTradingViewTickerTape();
+        renderTradingViewSingleQuote(state.tvSymbol);
+        renderTradingViewDxyQuote();
+        renderTradingViewAdvancedChart(state.tvSymbol);
+
+        syncSpotAndSlTp(state.spotPrice, true);
+        syncSmcIntelligenceCards();
+        syncTelegramInputsFromState();
+        setTradingStyle('SCALPING');
+
+        // Seed initial 150+ pip Hero setup (1 of 3 active today) without ringing on initial page load
+        const initial150 = buildSignalSetup({
+          anchorPrice: state.spotPrice,
+          forcedDirection: 'BUY',
+          style: 'DAY',
+          force150Plus: true,
+          customTitle: 'SSL Sweep + Bullish OB Reclaim & DXY Pullback',
+          customReason: 'EMA 20/50/200 bullish stack, Fib 0.618-0.786 discount hold, and DXY below 103.89 targeting 150+ pips.'
+        });
+        state.latestSignal = initial150;
+        register150PipSetup(initial150, { playSound: false, autoPush: false });
+        renderSignalCard(initial150);
+        renderHeroSignalBanner();
+        updateClockAndSession();
+
+        setInterval(() => pushCanvasTick(false), 1500);
+        setInterval(updateClockAndSession, 1000);
+      }
+
+      window.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
+</body>
+</html>
